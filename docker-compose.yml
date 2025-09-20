@@ -1,0 +1,29 @@
+services:
+  graphhopper:
+    image: graphhopper/graphhopper:latest
+    container_name: graphhopper
+    ports:
+      - "8989:8989"
+    volumes:
+      - ./data/switzerland-latest.osm.pbf:/data/switzerland-latest.osm.pbf:ro # Mount as read-only
+      - ./graphhopper-cache:/graph-cache
+    environment:
+      - JAVA_OPTS=-Xmx6g -Xms6g
+      - CMD_ARGS=server.host=0.0.0.0,
+                 datareader.file=/data/switzerland-latest.osm.pbf,
+                 graph.location=/graph-cache,
+                 graph.flag_encoders=bike,ebike # Add your e-bike profile here
+    restart: unless-stopped
+
+  photon:
+    build:
+      context: .
+      dockerfile: photon.Dockerfile
+    container_name: photon
+    ports:
+      - "2322:2322" # Photon runs on port 2322
+    volumes:
+      - ./data/photon:/photon/photon_data # Persist photon's data
+      - ./data/switzerland-latest.osm.pbf:/data/switzerland-latest.osm.pbf:ro
+    command: ["-osm-pbf", "/data/switzerland-latest.osm.pbf", "-country-codes", "CH", "-languages", "de,fr,it,en"]
+    restart: unless-stopped
