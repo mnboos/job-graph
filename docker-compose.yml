@@ -1,24 +1,29 @@
 services:
   graphhopper:
-    image: graphhopper/graphhopper:latest
+    build:
+        context: .
+        dockerfile: docker/graphhopper.Dockerfile
     container_name: graphhopper
+    deploy:
+        resources:
+            limits:
+                memory: 6g
+    memswap_limit: 6g
     ports:
       - "8989:8989"
     volumes:
-      - ./data/switzerland-latest.osm.pbf:/data/switzerland-latest.osm.pbf:ro # Mount as read-only
-      - ./graphhopper-cache:/graph-cache
+        - ./data/graphhopper/osm:/osm_data
+        - ./data/graphhopper/cache:/graph-cache
+        - ./graphhopper-config.yaml:/config.yaml:ro
     environment:
-      - JAVA_OPTS=-Xmx6g -Xms6g
-      - CMD_ARGS=server.host=0.0.0.0,
-                 datareader.file=/data/switzerland-latest.osm.pbf,
-                 graph.location=/graph-cache,
-                 graph.flag_encoders=bike,ebike # Add your e-bike profile here
+        - OSM_DATA_DIR=/osm_data
+        - OSM_DATA_URL=https://download.geofabrik.de/europe/switzerland-latest.osm.pbf
     restart: unless-stopped
 
   photon:
     build:
       context: .
-      dockerfile: photon.Dockerfile
+      dockerfile: docker/photon.Dockerfile
     container_name: photon
     ports:
       - "2322:2322" # Photon runs on port 2322

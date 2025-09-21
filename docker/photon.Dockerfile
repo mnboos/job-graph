@@ -8,7 +8,7 @@ WORKDIR /photon
 
 ADD https://github.com/komoot/photon/releases/download/0.7.4/photon-opensearch-0.7.4.jar photon.jar
 
-COPY entrypoint.sh .
+COPY docker/photon-entrypoint.sh entrypoint.sh
 
 #CMD ["java", "-jar", "/photon/photon.jar"]
 #ENTRYPOINT java -jar /photon/photon.jar
