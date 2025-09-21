@@ -71,21 +71,21 @@ onMounted(async () => {
         name="travelTimeMinutes"
         type="number"
         label="Reisezeit in Minuten"
-        class="q-mt-lg col-6"
+        class="q-mt-lg col-6 offset-3"
         bg-color="white"
       />
-      <q-input
-        debounce="300"
-        rounded
-        color="accent"
-        outlined
-        v-model.number="travelTimeMinutes"
-        name="travelTimeMinutes"
-        type="number"
-        label="Reisezeit in Minuten"
-        class="q-mt-lg col-6"
-        bg-color="white"
-      />
+      <!--      <q-input-->
+      <!--        debounce="300"-->
+      <!--        rounded-->
+      <!--        color="accent"-->
+      <!--        outlined-->
+      <!--        v-model.number="travelTimeMinutes"-->
+      <!--        name="travelTimeMinutes"-->
+      <!--        type="number"-->
+      <!--        label="Reisezeit in Minuten"-->
+      <!--        class="q-mt-lg col-6"-->
+      <!--        bg-color="white"-->
+      <!--      />-->
     </div>
     <div id="map" ref="map" class=""></div>
   </div>
