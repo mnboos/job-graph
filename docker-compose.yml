@@ -7,8 +7,8 @@ services:
     deploy:
         resources:
             limits:
-                memory: 6g
-    memswap_limit: 6g
+                memory: 12g
+    memswap_limit: 12g
     ports:
       - "8989:8989"
     volumes:
