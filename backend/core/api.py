@@ -26,7 +26,23 @@ async def retrieve_isochrone(*, travel_time_seconds: int) -> dict:
 
 
 @api.get("/search")
-async def search(request: HttpRequest, query: str) -> list[str]:
+async def search(request: HttpRequest, query: str, zoom: int, lat: float, lon: float) -> list[str]:
+    return await retrieve_places(query=query, zoom=zoom, lat=lat, lon=lon)
+
+
+@alru_cache(maxsize=32)
+async def retrieve_places(*, query: str, lat: float, lon: float, zoom: int) -> list:
     async with httpx.AsyncClient() as client:
-        resp = await client.get("http://photon:2322", params={"q": query})
-    return resp.json()["results"]
+        resp = await client.get(
+            "http://localhost:2322/api",
+            params={
+                "q": query,
+                "limit": 5,
+                "lat": lat,
+                "lon": lon,
+                "location_bias_scale": 0.2,
+                "zoom": zoom,
+                "layer": ["city", "locality"],
+            },
+        )
+    return resp.json().get("features", [])

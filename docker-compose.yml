@@ -28,7 +28,6 @@ services:
     ports:
       - "2322:2322" # Photon runs on port 2322
     volumes:
-      - ./data/photon:/photon/photon_data # Persist photon's data
-      - ./data/switzerland-latest.osm.pbf:/data/switzerland-latest.osm.pbf:ro
+      - ./data/photon:/photon_data # Persist photon's data
     command: ["-osm-pbf", "/data/switzerland-latest.osm.pbf", "-country-codes", "CH", "-languages", "de,fr,it,en"]
     restart: unless-stopped

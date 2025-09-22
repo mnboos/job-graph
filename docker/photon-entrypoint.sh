@@ -1,24 +1,29 @@
 #!/bin/bash
 
+PHOTON_DATA_DIR=photon_data
+INDEX_URL=https://download1.graphhopper.com/public/experimental/extracts/by-country-code/ch/photon-db-ch-latest.tar.bz2
+
+PHOTON_INDEX_FILE=${PHOTON_DATA_DIR}/$(basename $INDEX_URL)
+
 # Download elasticsearch index
-if [ -z "$( ls -A '/photon/photon_data' )" ]; then
+if [ ! -s $PHOTON_INDEX_FILE ]; then
     echo "Downloading search index"
 
     # Let graphhopper know where the traffic is coming from
     USER_AGENT="job-graph"
     wget \
+    --no-check-certificate \
 		--user-agent="$USER_AGENT" \
-		--no-verbose \
 		--show-progress \
-		--progress=dot:giga \
-		-o /photon/photon_data/photon-db-ch-latest.tar.bz2 \
-		https://download1.graphhopper.com/public/experimental/extracts/by-country-code/ch/photon-db-ch-latest.tar.bz2
+		--progress=bar:force:noscroll \
+		-o $PHOTON_INDEX_FILE \
+		$INDEX_URL
 	
 	pbzip2 -cd photon-db-ch-latest.tar.bz2 | tar x
 fi
 
 # Start photon if elastic index exists
-if [ -d "/photon/photon_data" ]; then
+if [ -s $PHOTON_INDEX_FIL ]; then
     echo "Start photon"
     java -jar photon.jar
 else

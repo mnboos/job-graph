@@ -8,6 +8,5 @@ const travelTimeMinutes = ref(5)
 <template>
   <q-page class="fit flex justify-center">
     <NiceMap />
-    <q-btn fab icon="add" color="accent" class="absolute" />
   </q-page>
 </template>

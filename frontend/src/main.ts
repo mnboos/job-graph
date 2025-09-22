@@ -6,6 +6,7 @@ import router from './router'
 import { Quasar } from 'quasar'
 import quasarLang from 'quasar/lang/de-CH'
 import quasarIconSet from 'quasar/icon-set/material-symbols-sharp'
+import { VueQueryPlugin } from '@tanstack/vue-query'
 
 // Import icon libraries
 import '@quasar/extras/material-symbols-sharp/material-symbols-sharp.css'
@@ -16,7 +17,7 @@ import 'quasar/dist/quasar.css'
 const app = createApp(App)
 
 app.use(router)
-
+app.use(VueQueryPlugin)
 app.use(Quasar, {
   plugins: {}, // import Quasar plugins and add here
   lang: quasarLang,

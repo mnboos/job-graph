@@ -16,6 +16,7 @@
   },
   "dependencies": {
     "@quasar/extras": "^1.17.0",
+    "@tanstack/vue-query": "^5.90.1",
     "leaflet": "^2.0.0-alpha.1",
     "quasar": "^2.18.5",
     "vue": "^3.5.17",
