@@ -9,8 +9,6 @@ const travelTimeMinutes = ref(5)
 const mapContainer = useTemplateRef<HTMLDivElement>('map')
 let mymap: Map | undefined = undefined
 
-const travelTimeSeconds = computed(() => travelTimeMinutes.value * 60)
-
 const addedPolygons: Polygon[] = []
 
 async function loadIso() {
@@ -18,7 +16,7 @@ async function loadIso() {
     addedPolygons.forEach((p) => mymap?.removeLayer(p))
     const { polygons: features } = (await (
       await fetch(
-        `http://localhost:8989/isochrone?point=47.521889,9.252317&key=&profile=bike&time_limit=${travelTimeSeconds.value}`,
+        `http://localhost:8000/api/generate_isochrone?point=47.521889,9.252317&key=&profile=bike&travel_time_minutes=${travelTimeMinutes.value}`,
       )
     ).json()) as unknown as { polygons: { geometry: { coordinates: [number, number][][] } }[] }
 

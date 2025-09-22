@@ -5,12 +5,29 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
-    "django>=5.2.6",
-    "django-ninja>=1.4.3",
-    "httpx>=0.28.1",
+    "async-lru==2.0.5",
+    "daphne==4.2.1",
+    "django==5.2.6",
+    "django-cors-headers==4.9.0",
+    "django-ninja==1.4.3",
+    "httpx==0.28.1",
 ]
 
 [dependency-groups]
 dev = [
-    "ruff>=0.13.1",
+    "ruff==0.13.1",
+    "taskipy==1.14.1",
 ]
+
+[tool.taskipy.tasks]
+export_openapi_schema = "python manage.py export_openapi_schema --indent 4 --sorted"
+
+[tool.ruff]
+target-version = "py313"
+show-fixes = true
+line-length = 120
+indent-width = 4
+fix = true
+
+[tool.ruff.lint]
+dummy-variable-rgx = "^request$"
