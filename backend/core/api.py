@@ -7,21 +7,21 @@ api = NinjaAPI()
 
 
 @api.get("/generate_isochrone")
-async def generate_isochrone(request: HttpRequest, travel_time_minutes: int) -> dict:
+async def generate_isochrone(request: HttpRequest, travel_time_minutes: int, point: str, profile: str) -> dict:
     travel_time_seconds = travel_time_minutes * 60
-    return await retrieve_isochrone(travel_time_seconds=travel_time_seconds)
+    return await retrieve_isochrone(travel_time_seconds=travel_time_seconds, point=point, profile=profile)
 
 
 @alru_cache(maxsize=32)
-async def retrieve_isochrone(*, travel_time_seconds: int) -> dict:
+async def retrieve_isochrone(*, travel_time_seconds: int, point: str, profile: str) -> dict:
     async with httpx.AsyncClient() as client:
         params = {
-            "point": "47.521889,9.252317",
+            "point": point,
             "key": "",
-            "profile": "bike",
+            "profile": profile,
             "time_limit": travel_time_seconds,
         }
-        resp = await client.get("http://localhost:8989/isochrone", params=params)
+        resp = await client.get("http://localhost:8989/isochrone", params=params, timeout=30000)
     return resp.json()
 
 

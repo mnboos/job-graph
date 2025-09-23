@@ -3,46 +3,80 @@ import { Map, TileLayer, Polygon, LatLng } from 'leaflet'
 import { computed, onMounted, type Ref, ref, useTemplateRef, watch } from 'vue'
 
 import 'leaflet/dist/leaflet.css'
-import { useQuery } from '@tanstack/vue-query'
+import { queryOptions, useQuery } from '@tanstack/vue-query'
 import { QSelect } from 'quasar'
+import {
+  symSharpPedalBike,
+  symSharpElectricBike,
+  symSharpElectricCar,
+} from '@quasar/extras/material-symbols-sharp'
 
-const travelTimeMinutes = ref(5)
-const abfahrtsort = ref('')
+const travelTimeMinutes = ref(10)
+const abfahrtsort = ref('47.521889,9.252317')
 
 const mapContainer = useTemplateRef<HTMLDivElement>('map')
-let mymap: Map | undefined = undefined
+let mymap: Ref<Map | undefined> = ref(undefined)
 
 const addedPolygons: Polygon[] = []
 
-async function loadIso() {
-  if (mymap) {
-    addedPolygons.forEach((p) => mymap?.removeLayer(p))
-    const { polygons: features } = (await (
-      await fetch(
-        `http://localhost:8000/api/generate_isochrone?point=47.521889,9.252317&key=&profile=bike&travel_time_minutes=${travelTimeMinutes.value}`,
-      )
-    ).json()) as unknown as { polygons: { geometry: { coordinates: [number, number][][] } }[] }
+const profile = ref('bike')
+const profiles = [
+  { label: 'Velo', value: 'bike', icon: symSharpPedalBike },
+  { label: 'E-Bike', value: 'ebike', icon: symSharpElectricBike },
+  { label: 'Auto', value: 'car', icon: symSharpElectricCar },
+]
 
-    const polygons = features.map(
+const hasMap = computed(() => !!mymap.value)
+
+const isochroneQueryOptions = queryOptions({
+  queryKey: ['isochrone', abfahrtsort, profile, travelTimeMinutes],
+  enabled: hasMap,
+  queryFn: () =>
+    fetch(
+      `http://localhost:8000/api/generate_isochrone?point=${abfahrtsort.value}&key=&profile=${profile.value}&travel_time_minutes=${travelTimeMinutes.value}`,
+    ).then(
+      (r) =>
+        r.json() as unknown as { polygons: { geometry: { coordinates: [number, number][][] } }[] },
+    ),
+  select: (data) => {
+    console.log('map data: ', data)
+    return data['polygons'].map(
       (p) =>
         new Polygon(
           p.geometry.coordinates.map((ring) => ring.map((coord) => new LatLng(coord[1], coord[0]))),
           { color: 'red' },
         ),
     )
-    polygons.forEach((p) => {
-      const map = mymap
-      if (map instanceof Map) {
-        p.addTo(map)
-        addedPolygons.push(p)
-        console.log('polygon added: ', p)
-        map.fitBounds(p.getBounds())
-      }
-    })
-  }
-}
+  },
+  staleTime: Infinity,
+})
 
-watch(travelTimeMinutes, loadIso)
+const { data: polygons, isFetching: isFetchingIsochrone } = useQuery(isochroneQueryOptions)
+
+watch(
+  polygons,
+  () => {
+    if (polygons.value) {
+      console.log('watch polygons: ', { ...polygons.value })
+      addedPolygons.forEach((p) => mymap.value?.removeLayer(p))
+      polygons.value?.forEach((p) => {
+        const map = mymap.value
+        if (map instanceof Map) {
+          p.addTo(map)
+          p.on('click', function () {
+            map.fitBounds(p.getBounds())
+          })
+          addedPolygons.push(p)
+          console.log('polygon added: ', p)
+          if (!map.getBounds().contains(p.getBounds())) {
+            map.fitBounds(p.getBounds())
+          }
+        }
+      })
+    }
+  },
+  { immediate: true },
+)
 
 onMounted(async () => {
   if (mapContainer.value) {
@@ -53,35 +87,26 @@ onMounted(async () => {
 
     const layer = new TileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
       maxZoom: 19,
-      attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
     })
     layer.addTo(map)
-    mymap = map
-
-    await loadIso()
+    mymap.value = map
   }
 })
-
-// const places = ref([
-//   { label: 'Amriswil', value: '123,456' },
-//   { label: 'Sulgen', value: '123,456' },
-//   { label: 'Weinfelden', value: '123,456' },
-//   { label: 'Zihlschlacht', value: '123,456' },
-// ])
 
 const filter = ref('')
 
 const placesDropdown = useTemplateRef<QSelect>('placesDropdown')
-const { data: places, isFetching } = useQuery({
+const { data: places, isFetching: isFetchingPlaces } = useQuery({
   queryKey: ['search', filter],
-  queryFn: () =>
+  enabled: hasMap,
+  queryFn: async () =>
     fetch(
-      `http://localhost:8000/api/search?query=${filter.value}&zoom=${mymap?.getZoom()}&lat=${mymap?.getCenter().lat}&lon=${mymap?.getCenter().lng}`,
+      `http://localhost:8000/api/search?query=${filter.value}&zoom=${mymap.value?.getZoom()}&lat=${mymap.value?.getCenter().lat}&lon=${mymap.value?.getCenter().lng}`,
     ).then((r) => r.json() as unknown as []),
   initialData: [],
 })
 
-let callback: undefined | ((callbackFn: () => void, afterFn: (o: Ref) => void) => void)
 const options = computed(() =>
   places.value.map((place) => {
     const { properties } = place
@@ -89,22 +114,9 @@ const options = computed(() =>
   }),
 )
 
-watch(options, () => {
-  if (callback) {
-    // const cb = callback
-    // callback = undefined
-    // cb()
-  }
-  // if (placesDropdown.value) {
-  //   console.log('refreshing dropdown now!')
-  //   placesDropdown.value.refresh()
-  // }
-})
-
 async function onFilter(
   val: string,
   doneFn: (callbackFn: () => void, afterFn?: (ref: QSelect) => void) => void,
-  abortFn: () => void,
 ) {
   if (filter.value !== val && val.length) {
     doneFn(async () => {
@@ -116,65 +128,62 @@ async function onFilter(
 
 <template>
   <div class="fit flex justify-center">
-    <div class="absolute row" style="z-index: 999; width: 30%">
-      <q-card class="col-12 q-pa-md q-mt-md">
+    <div class="absolute" style="z-index: 999; width: 20%">
+      <q-card class="row q-pa-md q-mt-md">
         <q-select
           ref="placesDropdown"
           name="Start"
           label="Abfahrtsort"
           rounded
           dense
-          autocomplete=""
+          autocomplete="label"
           :input-debounce="100"
           :options="options"
           outlined
           :model-value="abfahrtsort"
           @filter="onFilter"
           use-input
-        ></q-select>
+          class="col-12"
+        />
 
-        <label>
-          <div class="q-mt-md rounded-borders">Reisezeit</div>
-          <q-slider
-            name="reisezeit"
-            label
-            :label-value="travelTimeMinutes + 'min'"
-            v-model.number="travelTimeMinutes"
-            switch-label-side
-            color="orange"
-            class="col-6 offset-3 q-mb-lg"
-            snap
-            :step="5"
-            :min="15"
-            :max="45"
-            markers
-            label-always
-        /></label>
+        <div class="col-12 q-mt-md rounded-borders q-px-sm">Reisezeit</div>
+        <q-slider
+          name="reisezeit"
+          label
+          :label-value="travelTimeMinutes + 'min'"
+          v-model.number="travelTimeMinutes"
+          switch-label-side
+          class="col-12 q-mb-lg q-px-sm"
+          color="orange"
+          snap
+          :step="10"
+          :min="10"
+          :max="60"
+          :disable="isFetchingIsochrone"
+          markers
+          label-always
+        >
+        </q-slider>
+        <q-linear-progress
+          class="absolute overlay no-border-radius"
+          v-if="isFetchingIsochrone || isFetchingPlaces"
+          indeterminate
+        />
+        <div class="col-12 q-mt-md">
+          <q-btn-toggle
+            name="profileSelection"
+            v-model="profile"
+            unelevated
+            class="custom-toggle-border"
+            text-color="primary"
+            no-caps
+            spread
+            dense
+            :options="profiles"
+            rounded
+          />
+        </div>
       </q-card>
-      <!--      <q-input-->
-      <!--        debounce="300"-->
-      <!--        rounded-->
-      <!--        color="accent"-->
-      <!--        outlined-->
-      <!--        v-model.number="travelTimeMinutes"-->
-      <!--        name="travelTimeMinutes"-->
-      <!--        type="number"-->
-      <!--        label="Reisezeit in Minuten"-->
-      <!--        class="q-mt-lg col-6 offset-3"-->
-      <!--        bg-color="white"-->
-      <!--      />-->
-      <!--      <q-input-->
-      <!--        debounce="300"-->
-      <!--        rounded-->
-      <!--        color="accent"-->
-      <!--        outlined-->
-      <!--        v-model.number="travelTimeMinutes"-->
-      <!--        name="travelTimeMinutes"-->
-      <!--        type="number"-->
-      <!--        label="Reisezeit in Minuten"-->
-      <!--        class="q-mt-lg col-6"-->
-      <!--        bg-color="white"-->
-      <!--      />-->
     </div>
     <div id="map" ref="map" class=""></div>
   </div>
@@ -184,5 +193,14 @@ async function onFilter(
 #map {
   width: 100vw;
   height: 100vh;
+}
+
+.overlay {
+  top: 0;
+  left: 0;
+}
+
+.custom-toggle-border {
+  border: 1px solid #027be3;
 }
 </style>
