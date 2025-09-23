@@ -14,7 +14,8 @@ services:
     volumes:
         - ./data/graphhopper/osm:/osm_data
         - ./data/graphhopper/cache:/graph-cache
-        - ./graphhopper-config.yaml:/config.yaml:ro
+        - ./data/graphhopper/graphhopper-config.yaml:/config.yaml:ro
+        - ./data/graphhopper/models:/custom_models
     environment:
         - OSM_DATA_DIR=/osm_data
         - OSM_DATA_URL=https://download.geofabrik.de/europe/switzerland-latest.osm.pbf

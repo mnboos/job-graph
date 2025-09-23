@@ -9,6 +9,8 @@ import {
   symSharpPedalBike,
   symSharpElectricBike,
   symSharpElectricCar,
+  symSharpDirectionsWalk,
+  symSharpElectricMoped,
 } from '@quasar/extras/material-symbols-sharp'
 
 const travelTimeMinutes = ref(10)
@@ -21,8 +23,10 @@ const addedPolygons: Polygon[] = []
 
 const profile = ref('bike')
 const profiles = [
+  { label: 'Fuss', value: 'foot', icon: symSharpDirectionsWalk },
   { label: 'Velo', value: 'bike', icon: symSharpPedalBike },
-  { label: 'E-Bike', value: 'ebike', icon: symSharpElectricBike },
+  { label: 'E-Bike (25 km/h)', value: 'ebike', icon: symSharpElectricBike },
+  { label: 'S-Pedelec', value: 'fast_ebike', icon: symSharpElectricMoped },
   { label: 'Auto', value: 'car', icon: symSharpElectricCar },
 ]
 
