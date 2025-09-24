@@ -13,8 +13,15 @@ import {
   symSharpElectricMoped,
 } from '@quasar/extras/material-symbols-sharp'
 
+type PhotonResponse = {
+  name: string
+  postcode?: number
+  city?: string
+  extent?: [number, number] | [number, number, number, number]
+}
+
 const travelTimeMinutes = ref(10)
-const abfahrtsort = ref('47.521889,9.252317')
+const abfahrtsort = ref<PhotonResponse>({ name: 'Zihlschlacht', extent: [47.521889, 9.252317] })
 
 const mapContainer = useTemplateRef<HTMLDivElement>('map')
 let mymap: Ref<Map | undefined> = ref(undefined)
@@ -25,8 +32,8 @@ const profile = ref('bike')
 const profiles = [
   { label: 'Fuss', value: 'foot', icon: symSharpDirectionsWalk },
   { label: 'Velo', value: 'bike', icon: symSharpPedalBike },
-  { label: 'E-Bike (25 km/h)', value: 'ebike', icon: symSharpElectricBike },
-  { label: 'S-Pedelec', value: 'fast_ebike', icon: symSharpElectricMoped },
+  { label: 'E-Bike', value: 'ebike', icon: symSharpElectricBike },
+  { label: 'Mofa', value: 'fast_ebike', icon: symSharpElectricMoped },
   { label: 'Auto', value: 'car', icon: symSharpElectricCar },
 ]
 
@@ -114,7 +121,7 @@ const { data: places, isFetching: isFetchingPlaces } = useQuery({
 const options = computed(() =>
   places.value.map((place) => {
     const { properties } = place
-    return { label: properties['name'], value: properties['extent'] }
+    return properties
   }),
 )
 
@@ -122,33 +129,85 @@ async function onFilter(
   val: string,
   doneFn: (callbackFn: () => void, afterFn?: (ref: QSelect) => void) => void,
 ) {
-  if (filter.value !== val && val.length) {
-    doneFn(async () => {
-      filter.value = val
-    })
+  if (!val.length && abfahrtsort.value) {
+    val = abfahrtsort.value.name
   }
+  doneFn(
+    async () => {
+      filter.value = val
+    },
+    (ref) => {
+      if (val !== '' && !!ref.options?.length && ref.getOptionIndex() === -1) {
+        ref.moveOptionSelection(1, true) // focus the first selectable option and do not update the input-value
+        // ref.toggleOption(ref.options[ref.getOptionIndex()], true) // toggle the focused option
+      }
+    },
+  )
+}
+
+function onKeydown(e: KeyboardEvent) {
+  console.log('on keydown: ', e)
+  if (e.key === 'Backspace') {
+    if (filter.value.length) {
+      filter.value = filter.value.slice(0, -1)
+      console.log('new filter: ', filter.value)
+    }
+  }
+}
+
+function getCaption(opt: PhotonResponse) {
+  if (opt.postcode && opt.city) {
+    return [opt.postcode, opt.city].join(', ')
+  }
+  return ''
+}
+
+function selectAbfahrtsort(ort: PhotonResponse) {
+  abfahrtsort.value = ort
+  filter.value = ''
+  placesDropdown.value?.updateInputValue('', true)
 }
 </script>
 
 <template>
   <div class="fit flex justify-center">
-    <div class="absolute" style="z-index: 999; width: 20%">
+    <div class="absolute" style="z-index: 999">
       <q-card class="row q-pa-md q-mt-md">
         <q-select
           ref="placesDropdown"
           name="Start"
           label="Abfahrtsort"
+          autofocus
           rounded
           dense
-          autocomplete="label"
+          hide-dropdown-icon
+          option-label="name"
+          option-value="extent"
+          autocomplete="name"
+          options-selected-class="text-accent"
           :input-debounce="100"
+          type="search"
           :options="options"
           outlined
-          :model-value="abfahrtsort"
+          v-model="abfahrtsort"
           @filter="onFilter"
           use-input
           class="col-12"
-        />
+          @keydown="onKeydown"
+        >
+          <template #loading></template>
+          <template #option="props">
+            <q-item clickable :focused="props.focused" @click="selectAbfahrtsort(props.opt)">
+              {{ props }}
+              <q-item-section>
+                <q-item-label>{{ props.opt.name }}</q-item-label>
+                <q-item-label v-if="getCaption(props.opt)" caption>{{
+                  getCaption(props.opt)
+                }}</q-item-label>
+              </q-item-section>
+            </q-item>
+          </template>
+        </q-select>
 
         <div class="col-12 q-mt-md rounded-borders q-px-sm">Reisezeit</div>
         <q-slider
