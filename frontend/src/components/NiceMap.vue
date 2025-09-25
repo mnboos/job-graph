@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Map, TileLayer, Polygon, LatLng } from "leaflet";
+import { Map as LeafletMap, TileLayer, Polygon, LatLng } from "leaflet";
 import { computed, onMounted, type Ref, ref, useTemplateRef, watch } from "vue";
 
 import "leaflet/dist/leaflet.css";
@@ -12,17 +12,22 @@ import {
     symSharpDirectionsWalk,
     symSharpElectricMoped,
 } from "@quasar/extras/material-symbols-sharp";
-import type { PhotonFeature } from "@/interfaces";
 import PlaceSearchItem from "@/components/PlaceSearchItem.vue";
+import { DefaultApi, type PlacesSearchResult } from "@/api";
+
+interface ProcessedFeature {
+    feature: PlacesSearchResult;
+    showCanton: boolean;
+}
 
 const travelTimeMinutes = ref(10);
-const abfahrtsort = ref<PhotonFeature>({
+const abfahrtsort = ref<PlacesSearchResult>({
     properties: { name: "Zihlschlacht" },
     geometry: { type: "Point", coordinates: [47.521889, 9.252317] },
 });
 
 const mapContainer = useTemplateRef<HTMLDivElement>("map");
-const mymap: Ref<Map | undefined> = ref(undefined);
+const mymap: Ref<LeafletMap | undefined> = ref(undefined);
 
 const addedPolygons: Polygon[] = [];
 
@@ -86,7 +91,7 @@ watch(
 
 onMounted(async () => {
     if (mapContainer.value) {
-        const map = new Map("map", {
+        const map = new LeafletMap("map", {
             center: [47.521889, 9.252317],
             zoom: 16,
         });
@@ -102,15 +107,66 @@ onMounted(async () => {
 
 const filter = ref("");
 
+const api = new DefaultApi();
+
 const placesDropdown = useTemplateRef<QSelect>("placesDropdown");
-const { data: places, isFetching: isFetchingPlaces } = useQuery({
+const { data: features, isFetching: isFetchingPlaces } = useQuery({
     queryKey: ["search", filter],
     enabled: hasMap,
+    // queryFn: async () =>
+    //     fetch(
+    //         `http://localhost:8000/api/search?query=${filter.value}&zoom=${mymap.value?.getZoom()}&lat=${mymap.value?.getCenter().lat}&lon=${mymap.value?.getCenter().lng}`,
+    //     ).then(r => r.json() as unknown as PhotonFeature[]),
     queryFn: async () =>
-        fetch(
-            `http://localhost:8000/api/search?query=${filter.value}&zoom=${mymap.value?.getZoom()}&lat=${mymap.value?.getCenter().lat}&lon=${mymap.value?.getCenter().lng}`,
-        ).then(r => r.json() as unknown as PhotonFeature[]),
+        api.apiSearch({
+            query: filter.value,
+            zoom: mymap.value?.getZoom() ?? 16,
+            lat: mymap.value?.getCenter().lat ?? 0,
+            lon: mymap.value?.getCenter().lng ?? 0,
+        }),
     initialData: [],
+});
+
+/**
+ * A computed property that takes the raw `features` from useQuery and processes them.
+ * It determines for each feature whether its canton should be displayed to resolve ambiguity.
+ * This automatically re-runs whenever the `features` data changes.
+ */
+const processedFeatures = computed(() => {
+    const currentFeatures = features.value;
+    if (!currentFeatures || currentFeatures.length === 0) {
+        return [];
+    }
+
+    // Step 1: Group all features by their city name.
+    const cityGroups = new Map<string, PlacesSearchResult[]>();
+    for (const feature of currentFeatures) {
+        const cityName = feature.properties.city || feature.properties.name;
+        if (!cityName) continue;
+
+        if (!cityGroups.has(cityName)) {
+            cityGroups.set(cityName, []);
+        }
+        cityGroups.get(cityName)!.push(feature);
+    }
+
+    // Step 2: Identify which city names are ambiguous (appear in multiple cantons).
+    const ambiguousCityNames = new Set<string>();
+    for (const [cityName, featuresInGroup] of cityGroups.entries()) {
+        const cantonsInGroup = new Set(featuresInGroup.map(f => f.properties.state));
+        if (cantonsInGroup.size > 1) {
+            ambiguousCityNames.add(cityName);
+        }
+    }
+
+    // Step 3: Map the original features list to a new list that includes the `showCanton` flag.
+    return currentFeatures.map(feature => {
+        const cityName = feature.properties.city || feature.properties.name;
+        return {
+            feature: feature,
+            showCanton: !!cityName && ambiguousCityNames.has(cityName),
+        };
+    });
 });
 
 async function onFilter(val: string, doneFn: (callbackFn: () => void, afterFn?: (ref: QSelect) => void) => void) {
@@ -140,7 +196,7 @@ function onKeydown(e: KeyboardEvent) {
     }
 }
 
-function selectAbfahrtsort(ort: PhotonFeature) {
+function selectAbfahrtsort(ort: PlacesSearchResult) {
     abfahrtsort.value = ort;
     filter.value = "";
     placesDropdown.value?.updateInputValue("", true);
@@ -163,7 +219,7 @@ function selectAbfahrtsort(ort: PhotonFeature) {
                     options-selected-class="text-accent"
                     :input-debounce="100"
                     type="search"
-                    :options="places"
+                    :options="processedFeatures"
                     outlined
                     v-model="abfahrtsort"
                     @filter="onFilter"
@@ -173,11 +229,18 @@ function selectAbfahrtsort(ort: PhotonFeature) {
                 >
                     <template #loading></template>
                     <template #selected-item="props">
-                        <PlaceSearchItem :feature="props.opt" :focused="false" inline :clickable="false" />
+                        <PlaceSearchItem
+                            :feature="props.opt"
+                            :show-canton="false"
+                            :focused="false"
+                            inline
+                            :clickable="false"
+                        />
                     </template>
                     <template #option="props">
                         <PlaceSearchItem
-                            :feature="props.opt"
+                            :feature="props.opt.feature"
+                            :show-canton="props.opt.showCanton"
                             :focused="props.focused"
                             @click="selectAbfahrtsort(props.opt)"
                             :inline="false"

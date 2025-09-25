@@ -1,16 +1,17 @@
 <script setup lang="ts">
-import type { PhotonFeature } from "@/interfaces";
 import { computed, toRefs } from "vue";
+import type { PlacesSearchResult } from "@/api";
 
 const props = defineProps<{
-    feature: PhotonFeature;
+    feature: PlacesSearchResult;
+    showCanton: boolean;
     focused: boolean;
     inline: boolean;
     clickable: boolean;
 }>();
 const emit = defineEmits<{ (e: "click"): void }>();
 
-const { feature, focused, inline, clickable } = toRefs(props);
+const { feature, focused, inline, clickable, showCanton } = toRefs(props);
 
 const cantonAbbreviations: { [key: string]: string } = {
     Aargau: "AG",
@@ -42,54 +43,39 @@ const cantonAbbreviations: { [key: string]: string } = {
 };
 
 const classes = computed(() => (inline.value ? "q-mx-none q-px-none" : ""));
+const getCityWithOptionalCanton = () => {
+    const { city, state } = feature.value.properties;
+    if (!city) return "";
 
-/**
- * The secondary line (caption) for the two-line display, based on the new rules.
- * e.g., "Thurgau" or "Sirnach (TG)"
- */
-const secondaryLine = computed(() => {
-    const { name, city, state } = props.feature.properties;
-
-    // Rule 1: If the result IS a city (name === city), show the full canton name.
-    if (name && name === city) {
-        return state ?? "";
-    }
-
-    // Rule 2: If the result is WITHIN a city (name !== city), show "City (Abbr)".
-    if (city) {
+    if (showCanton.value) {
         const cantonAbbr = state ? cantonAbbreviations[state] : undefined;
         if (cantonAbbr) {
             return `${city} (${cantonAbbr})`;
         }
-        return city; // Fallback
     }
+    return city;
+};
+const secondaryLine = computed(() => {
+    const { name, city, state } = feature.value.properties;
 
-    return ""; // No caption if there's no city context.
+    if (name && name === city) {
+        return state ?? "";
+    }
+    if (city && name !== city) {
+        return getCityWithOptionalCanton();
+    }
+    return "";
 });
 
-/**
- * The single-line inline representation, based on the new rules.
- * e.g., "Sirnach (TG)" or "Wasserwerk Sirnach, Sirnach (TG)"
- */
 const inlineDisplay = computed(() => {
-    const { name, city, state } = props.feature.properties;
-    if (!name) return "Unknown Location";
+    const { name, city } = feature.value.properties;
+    if (!name) return "Unknown";
 
-    const cityLabel = city ?? "";
-    const cantonAbbr = state ? cantonAbbreviations[state] : undefined;
+    const cityWithCanton = getCityWithOptionalCanton();
 
-    // Build the city part of the label, e.g., "Sirnach (TG)"
-    let cityWithCanton = cityLabel;
-    if (cityLabel && cantonAbbr) {
-        cityWithCanton = `${cityLabel} (${cantonAbbr})`;
-    }
-
-    // Rule 1: If name and city are the same, we just need the combined version.
     if (name === city) {
         return cityWithCanton;
     }
-
-    // Rule 2: If they are different, combine them with a comma.
     return cityWithCanton ? `${name}, ${cityWithCanton}` : name;
 });
 </script>
