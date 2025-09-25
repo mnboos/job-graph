@@ -12,19 +12,17 @@ import {
   symSharpDirectionsWalk,
   symSharpElectricMoped,
 } from '@quasar/extras/material-symbols-sharp'
-
-type PhotonResponse = {
-  name: string
-  postcode?: number
-  city?: string
-  extent?: [number, number] | [number, number, number, number]
-}
+import type { PhotonFeature } from '@/interfaces'
+import PlaceSearchItem from '@/components/PlaceSearchItem.vue'
 
 const travelTimeMinutes = ref(10)
-const abfahrtsort = ref<PhotonResponse>({ name: 'Zihlschlacht', extent: [47.521889, 9.252317] })
+const abfahrtsort = ref<PhotonFeature>({
+  properties: { name: 'Zihlschlacht' },
+  geometry: { type: 'Point', coordinates: [47.521889, 9.252317] },
+})
 
 const mapContainer = useTemplateRef<HTMLDivElement>('map')
-let mymap: Ref<Map | undefined> = ref(undefined)
+const mymap: Ref<Map | undefined> = ref(undefined)
 
 const addedPolygons: Polygon[] = []
 
@@ -114,23 +112,16 @@ const { data: places, isFetching: isFetchingPlaces } = useQuery({
   queryFn: async () =>
     fetch(
       `http://localhost:8000/api/search?query=${filter.value}&zoom=${mymap.value?.getZoom()}&lat=${mymap.value?.getCenter().lat}&lon=${mymap.value?.getCenter().lng}`,
-    ).then((r) => r.json() as unknown as []),
+    ).then((r) => r.json() as unknown as PhotonFeature[]),
   initialData: [],
 })
-
-const options = computed(() =>
-  places.value.map((place) => {
-    const { properties } = place
-    return properties
-  }),
-)
 
 async function onFilter(
   val: string,
   doneFn: (callbackFn: () => void, afterFn?: (ref: QSelect) => void) => void,
 ) {
   if (!val.length && abfahrtsort.value) {
-    val = abfahrtsort.value.name
+    val = abfahrtsort.value.properties.name ?? 'foobar'
   }
   doneFn(
     async () => {
@@ -155,14 +146,7 @@ function onKeydown(e: KeyboardEvent) {
   }
 }
 
-function getCaption(opt: PhotonResponse) {
-  if (opt.postcode && opt.city) {
-    return [opt.postcode, opt.city].join(', ')
-  }
-  return ''
-}
-
-function selectAbfahrtsort(ort: PhotonResponse) {
+function selectAbfahrtsort(ort: PhotonFeature) {
   abfahrtsort.value = ort
   filter.value = ''
   placesDropdown.value?.updateInputValue('', true)
@@ -181,13 +165,11 @@ function selectAbfahrtsort(ort: PhotonResponse) {
           rounded
           dense
           hide-dropdown-icon
-          option-label="name"
-          option-value="extent"
           autocomplete="name"
           options-selected-class="text-accent"
           :input-debounce="100"
           type="search"
-          :options="options"
+          :options="places"
           outlined
           v-model="abfahrtsort"
           @filter="onFilter"
@@ -196,16 +178,17 @@ function selectAbfahrtsort(ort: PhotonResponse) {
           @keydown="onKeydown"
         >
           <template #loading></template>
+          <template #selected-item="props">
+            <PlaceSearchItem :feature="props.opt" :focused="false" inline :clickable="false"
+          /></template>
           <template #option="props">
-            <q-item clickable :focused="props.focused" @click="selectAbfahrtsort(props.opt)">
-              {{ props }}
-              <q-item-section>
-                <q-item-label>{{ props.opt.name }}</q-item-label>
-                <q-item-label v-if="getCaption(props.opt)" caption>{{
-                  getCaption(props.opt)
-                }}</q-item-label>
-              </q-item-section>
-            </q-item>
+            <PlaceSearchItem
+              :feature="props.opt"
+              :focused="props.focused"
+              @click="selectAbfahrtsort(props.opt)"
+              :inline="false"
+              clickable
+            />
           </template>
         </q-select>
 

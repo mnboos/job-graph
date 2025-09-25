@@ -44,5 +44,6 @@ async def retrieve_places(*, query: str, lat: float, lon: float, zoom: int) -> l
                 "zoom": zoom,
                 "layer": ["city", "locality"],
             },
+            timeout=30000,
         )
     return resp.json().get("features", [])
