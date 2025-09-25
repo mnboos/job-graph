@@ -13,7 +13,12 @@
         <entry key="crossPlatformExecutableResolution" value="true" />
         <entry key="executable" value="true" />
         <entry key="fixOnSave" value="true" />
+        <entry key="formatOnOptimizeImports" value="true" />
+        <entry key="formatOnReformat" value="true" />
         <entry key="formatOnSave" value="true" />
+        <entry key="formatting" value="true" />
+        <entry key="linting" value="true" />
+        <entry key="runOnSaveProjectFilesOnly" value="true" />
         <entry key="runningMode" value="true" />
       </map>
     </option>
