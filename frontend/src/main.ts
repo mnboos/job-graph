@@ -1,28 +1,28 @@
-import './assets/main.css'
+import "./assets/main.css";
 
-import { createApp } from 'vue'
-import App from './App.vue'
-import router from './router'
-import { Quasar } from 'quasar'
-import quasarLang from 'quasar/lang/de-CH'
-import quasarIconSet from 'quasar/icon-set/material-symbols-sharp'
-import { VueQueryPlugin } from '@tanstack/vue-query'
+import { createApp } from "vue";
+import App from "./App.vue";
+import router from "./router";
+import { Quasar } from "quasar";
+import quasarLang from "quasar/lang/de-CH";
+import quasarIconSet from "quasar/icon-set/material-symbols-sharp";
+import { VueQueryPlugin } from "@tanstack/vue-query";
 
 // Import icon libraries
-import '@quasar/extras/material-symbols-sharp/material-symbols-sharp.css'
+import "@quasar/extras/material-symbols-sharp/material-symbols-sharp.css";
 
 // Import Quasar css
-import 'quasar/dist/quasar.css'
+import "quasar/dist/quasar.css";
 
-const app = createApp(App)
+const app = createApp(App);
 
-app.use(router)
-app.use(VueQueryPlugin)
+app.use(router);
+app.use(VueQueryPlugin);
 app.use(Quasar, {
-  plugins: {}, // import Quasar plugins and add here
-  lang: quasarLang,
-  iconSet: quasarIconSet,
-  /*
+    plugins: {}, // import Quasar plugins and add here
+    lang: quasarLang,
+    iconSet: quasarIconSet,
+    /*
   config: {
     brand: {
       // primary: '#e46262',
@@ -34,6 +34,6 @@ app.use(Quasar, {
     // ..and many more (check Installation card on each Quasar component/directive/plugin)
   }
   */
-})
+});
 
-app.mount('#app')
+app.mount("#app");
