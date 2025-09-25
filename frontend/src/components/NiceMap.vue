@@ -15,15 +15,11 @@ import {
 import PlaceSearchItem from "@/components/PlaceSearchItem.vue";
 import { DefaultApi, type PlacesSearchResult } from "@/api";
 
-interface ProcessedFeature {
-    feature: PlacesSearchResult;
-    showCanton: boolean;
-}
-
 const travelTimeMinutes = ref(10);
 const abfahrtsort = ref<PlacesSearchResult>({
     properties: { name: "Zihlschlacht" },
     geometry: { type: "Point", coordinates: [47.521889, 9.252317] },
+    showCanton: false,
 });
 
 const mapContainer = useTemplateRef<HTMLDivElement>("map");
