@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Map as LeafletMap, TileLayer, Polygon, LatLng } from "leaflet";
-import { computed, onMounted, type Ref, ref, useTemplateRef, watch } from "vue";
+import { computed, onMounted, type Ref, ref, toValue, useTemplateRef, watch } from "vue";
 
 import "leaflet/dist/leaflet.css";
 import { queryOptions, useQuery } from "@tanstack/vue-query";
@@ -99,7 +99,7 @@ watch(
                     addedPolygons.push(p);
                     console.log("polygon added: ", p);
                     if (!map.getBounds().contains(p.getBounds())) {
-                        map.fitBounds(p.getBounds());
+                        // map.fitBounds(p.getBounds());
                     }
                 }
             });
@@ -145,14 +145,15 @@ const processedFeatures = computed(() => {
         const cityName = feature.properties.city || feature.properties.name;
         return {
             feature: feature,
-            showCanton: !!cityName && ambiguousCityNames.has(cityName),
+            showCanton: !!cityName && ambiguousCityNames.has(cityName), // todo: refactor: move to backend
         };
     });
 });
 
 async function onFilter(val: string, doneFn: (callbackFn: () => void, afterFn?: (ref: QSelect) => void) => void) {
     if (!val.length && abfahrtsort.value) {
-        val = abfahrtsort.value.properties.name ?? "foobar";
+        console.log("ort: ", toValue(abfahrtsort));
+        val = abfahrtsort.value?.properties.name ?? "foobar";
     }
     doneFn(
         async () => {
@@ -227,7 +228,8 @@ onMounted(async () => {
                     <template #loading></template>
                     <template #selected-item="props">
                         <PlaceSearchItem
-                            :feature="props.opt"
+                            v-if="props.opt && props.opt.feature"
+                            :feature="props.opt.feature"
                             :show-canton="false"
                             :focused="false"
                             inline
