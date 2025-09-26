@@ -115,13 +115,16 @@ graphhopper:
   graph.encoded_values: >
     car_access,
     car_average_speed,
+    car_temporal_access,
     road_access,
     max_speed,
     road_environment,
     bike_temporal_access,
+    foot_temporal_access,
     average_slope,
     max_slope,
     road_class,
+    road_class_link,
     foot_access,
     foot_priority,
     foot_average_speed,
@@ -135,6 +138,8 @@ graphhopper:
     smoothness,
     max_width,
     curvature,
+    osm_way_id,
+    track_type
 
   #### Speed, hybrid and flexible mode ####
 
