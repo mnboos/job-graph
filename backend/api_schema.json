@@ -115,6 +115,51 @@
                 "title": "Geometry",
                 "type": "object"
             },
+            "IsoPolygon": {
+                "properties": {
+                    "rings": {
+                        "items": {
+                            "items": {
+                                "maxItems": 2,
+                                "minItems": 2,
+                                "prefixItems": [
+                                    {
+                                        "type": "number"
+                                    },
+                                    {
+                                        "type": "number"
+                                    }
+                                ],
+                                "type": "array"
+                            },
+                            "type": "array"
+                        },
+                        "title": "Rings",
+                        "type": "array"
+                    }
+                },
+                "required": [
+                    "rings"
+                ],
+                "title": "IsoPolygon",
+                "type": "object"
+            },
+            "IsochroneOut": {
+                "properties": {
+                    "polygons": {
+                        "items": {
+                            "$ref": "#/components/schemas/IsoPolygon"
+                        },
+                        "title": "Polygons",
+                        "type": "array"
+                    }
+                },
+                "required": [
+                    "polygons"
+                ],
+                "title": "IsochroneOut",
+                "type": "object"
+            },
             "PlacesSearchResult": {
                 "properties": {
                     "geometry": {
@@ -160,11 +205,20 @@
                     },
                     {
                         "in": "query",
-                        "name": "point",
+                        "name": "lat",
                         "required": true,
                         "schema": {
-                            "title": "Point",
-                            "type": "string"
+                            "title": "Lat",
+                            "type": "number"
+                        }
+                    },
+                    {
+                        "in": "query",
+                        "name": "lon",
+                        "required": true,
+                        "schema": {
+                            "title": "Lon",
+                            "type": "number"
                         }
                     },
                     {
@@ -179,6 +233,13 @@
                 ],
                 "responses": {
                     "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/IsochroneOut"
+                                }
+                            }
+                        },
                         "description": "OK"
                     }
                 },

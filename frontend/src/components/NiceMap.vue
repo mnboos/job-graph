@@ -37,73 +37,31 @@ const profiles = [
 ];
 
 const hasMap = computed(() => !!mymap.value);
+const filter = ref("");
+
+const api = new DefaultApi();
 
 const isochroneQueryOptions = queryOptions({
     queryKey: ["isochrone", abfahrtsort, profile, travelTimeMinutes],
     enabled: hasMap,
     queryFn: () =>
-        fetch(
-            `http://localhost:8000/api/generate_isochrone?point=${abfahrtsort.value}&key=&profile=${profile.value}&travel_time_minutes=${travelTimeMinutes.value}`,
-        ).then(r => r.json() as unknown as { polygons: { geometry: { coordinates: [number, number][][] } }[] }),
-    select: data => {
-        console.log("map data: ", data);
-        return data["polygons"].map(
+        api.apiGenerateIsochrone({
+            lat: abfahrtsort.value.geometry.coordinates[0],
+            lon: abfahrtsort.value.geometry.coordinates[1],
+            profile: profile.value,
+            travelTimeMinutes: travelTimeMinutes.value,
+        }),
+    select: isochrone => {
+        return isochrone.polygons.map(
             p =>
                 new Polygon(
-                    p.geometry.coordinates.map(ring => ring.map(coord => new LatLng(coord[1], coord[0]))),
+                    p.rings.map(ring => ring.map(coord => new LatLng(coord[1], coord[0]))),
                     { color: "red" },
                 ),
         );
     },
     staleTime: Infinity,
 });
-
-const { data: polygons, isFetching: isFetchingIsochrone } = useQuery(isochroneQueryOptions);
-
-watch(
-    polygons,
-    () => {
-        if (polygons.value) {
-            console.log("watch polygons: ", { ...polygons.value });
-            addedPolygons.forEach(p => mymap.value?.removeLayer(p));
-            polygons.value?.forEach(p => {
-                const map = mymap.value;
-                if (map instanceof Map) {
-                    p.addTo(map);
-                    p.on("click", function () {
-                        map.fitBounds(p.getBounds());
-                    });
-                    addedPolygons.push(p);
-                    console.log("polygon added: ", p);
-                    if (!map.getBounds().contains(p.getBounds())) {
-                        map.fitBounds(p.getBounds());
-                    }
-                }
-            });
-        }
-    },
-    { immediate: true },
-);
-
-onMounted(async () => {
-    if (mapContainer.value) {
-        const map = new LeafletMap("map", {
-            center: [47.521889, 9.252317],
-            zoom: 16,
-        });
-
-        const layer = new TileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
-            maxZoom: 19,
-            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-        });
-        layer.addTo(map);
-        mymap.value = map;
-    }
-});
-
-const filter = ref("");
-
-const api = new DefaultApi();
 
 const placesDropdown = useTemplateRef<QSelect>("placesDropdown");
 const { data: features, isFetching: isFetchingPlaces } = useQuery({
@@ -122,6 +80,33 @@ const { data: features, isFetching: isFetchingPlaces } = useQuery({
         }),
     initialData: [],
 });
+
+const { data: polygons, isFetching: isFetchingIsochrone } = useQuery(isochroneQueryOptions);
+
+watch(
+    polygons,
+    () => {
+        if (polygons.value) {
+            console.log("watch polygons: ", { ...polygons.value });
+            addedPolygons.forEach(p => mymap.value?.removeLayer(p));
+            polygons.value?.forEach(p => {
+                const map = mymap.value;
+                if (map instanceof LeafletMap) {
+                    p.addTo(map);
+                    p.on("click", function () {
+                        map.fitBounds(p.getBounds());
+                    });
+                    addedPolygons.push(p);
+                    console.log("polygon added: ", p);
+                    if (!map.getBounds().contains(p.getBounds())) {
+                        map.fitBounds(p.getBounds());
+                    }
+                }
+            });
+        }
+    },
+    { immediate: true },
+);
 
 /**
  * A computed property that takes the raw `features` from useQuery and processes them.
@@ -197,6 +182,22 @@ function selectAbfahrtsort(ort: PlacesSearchResult) {
     filter.value = "";
     placesDropdown.value?.updateInputValue("", true);
 }
+
+onMounted(async () => {
+    if (mapContainer.value) {
+        const map = new LeafletMap("map", {
+            center: [47.521889, 9.252317],
+            zoom: 16,
+        });
+
+        const layer = new TileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+            maxZoom: 19,
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+        });
+        layer.addTo(map);
+        mymap.value = map;
+    }
+});
 </script>
 
 <template>

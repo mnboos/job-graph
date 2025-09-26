@@ -2,27 +2,9 @@ from async_lru import alru_cache
 from django.http import HttpRequest
 from ninja import NinjaAPI, Schema
 import httpx
+from ninja.errors import HttpError
 
 api = NinjaAPI()
-
-
-@api.get("/generate_isochrone")
-async def generate_isochrone(request: HttpRequest, travel_time_minutes: int, point: str, profile: str) -> dict:
-    travel_time_seconds = travel_time_minutes * 60
-    return await retrieve_isochrone(travel_time_seconds=travel_time_seconds, point=point, profile=profile)
-
-
-@alru_cache(maxsize=32)
-async def retrieve_isochrone(*, travel_time_seconds: int, point: str, profile: str) -> dict:
-    async with httpx.AsyncClient() as client:
-        params = {
-            "point": point,
-            "key": "",
-            "profile": profile,
-            "time_limit": travel_time_seconds,
-        }
-        resp = await client.get("http://localhost:8989/isochrone", params=params, timeout=30000)
-    return resp.json()
 
 
 class FeatureProperties(Schema):
@@ -58,6 +40,43 @@ class PlacesSearchResult(Schema):
     show_canton: bool
 
 
+class IsoPolygon(Schema):
+    rings: list[list[tuple[float, float]]]
+
+
+class IsochroneOut(Schema):
+    polygons: list[IsoPolygon]
+
+
+@api.get("/generate_isochrone", response=IsochroneOut)
+async def generate_isochrone(request: HttpRequest, travel_time_minutes: int, lat: float, lon: float, profile: str):
+    travel_time_seconds = travel_time_minutes * 60
+    resp = await retrieve_isochrone(travel_time_seconds=travel_time_seconds, lat=lat, lon=lon, profile=profile)
+    polygons = resp.get("polygons", [])
+    results = []
+    for p in polygons:
+        rings = p.get("geometry", {}).get("coordinates", [])
+
+        results.append({"rings": rings})
+    return {"polygons": results}
+
+
+@alru_cache(maxsize=32)
+async def retrieve_isochrone(*, travel_time_seconds: int, lat: float, lon: float, profile: str) -> dict:
+    async with httpx.AsyncClient() as client:
+        params = {
+            "point": f"{lat},{lon}",
+            "key": "",
+            "profile": profile,
+            "time_limit": travel_time_seconds,
+        }
+        resp = await client.get("http://localhost:8989/isochrone", params=params, timeout=30000)
+        data = resp.json()
+        if resp.status_code != 200:
+            raise HttpError(resp.status_code, data)
+    return data
+
+
 @api.get("/search", response=list[PlacesSearchResult])
 async def search(request: HttpRequest, query: str, zoom: int, lat: float, lon: float):
     places = await retrieve_places(query=query, zoom=zoom, lat=lat, lon=lon)
@@ -83,4 +102,7 @@ async def retrieve_places(*, query: str, lat: float, lon: float, zoom: int) -> l
             },
             timeout=30000,
         )
-    return resp.json().get("features", [])
+    data = resp.json()
+    if resp.status_code != 200:
+        raise HttpError(resp.status_code, data)
+    return data.get("features", [])

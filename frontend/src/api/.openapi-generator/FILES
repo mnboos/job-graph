@@ -3,6 +3,8 @@ apis/index.ts
 index.ts
 models/FeatureProperties.ts
 models/Geometry.ts
+models/IsoPolygon.ts
+models/IsochroneOut.ts
 models/PlacesSearchResult.ts
 models/index.ts
 runtime.ts

@@ -15,16 +15,20 @@
 
 import * as runtime from '../runtime';
 import type {
+  IsochroneOut,
   PlacesSearchResult,
 } from '../models/index';
 import {
+    IsochroneOutFromJSON,
+    IsochroneOutToJSON,
     PlacesSearchResultFromJSON,
     PlacesSearchResultToJSON,
 } from '../models/index';
 
 export interface ApiGenerateIsochroneRequest {
     travelTimeMinutes: number;
-    point: string;
+    lat: number;
+    lon: number;
     profile: string;
 }
 
@@ -43,7 +47,7 @@ export class DefaultApi extends runtime.BaseAPI {
     /**
      * Generate Isochrone
      */
-    async apiGenerateIsochroneRaw(requestParameters: ApiGenerateIsochroneRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<void>> {
+    async apiGenerateIsochroneRaw(requestParameters: ApiGenerateIsochroneRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<IsochroneOut>> {
         if (requestParameters['travelTimeMinutes'] == null) {
             throw new runtime.RequiredError(
                 'travelTimeMinutes',
@@ -51,10 +55,17 @@ export class DefaultApi extends runtime.BaseAPI {
             );
         }
 
-        if (requestParameters['point'] == null) {
+        if (requestParameters['lat'] == null) {
             throw new runtime.RequiredError(
-                'point',
-                'Required parameter "point" was null or undefined when calling apiGenerateIsochrone().'
+                'lat',
+                'Required parameter "lat" was null or undefined when calling apiGenerateIsochrone().'
+            );
+        }
+
+        if (requestParameters['lon'] == null) {
+            throw new runtime.RequiredError(
+                'lon',
+                'Required parameter "lon" was null or undefined when calling apiGenerateIsochrone().'
             );
         }
 
@@ -71,8 +82,12 @@ export class DefaultApi extends runtime.BaseAPI {
             queryParameters['travel_time_minutes'] = requestParameters['travelTimeMinutes'];
         }
 
-        if (requestParameters['point'] != null) {
-            queryParameters['point'] = requestParameters['point'];
+        if (requestParameters['lat'] != null) {
+            queryParameters['lat'] = requestParameters['lat'];
+        }
+
+        if (requestParameters['lon'] != null) {
+            queryParameters['lon'] = requestParameters['lon'];
         }
 
         if (requestParameters['profile'] != null) {
@@ -91,14 +106,15 @@ export class DefaultApi extends runtime.BaseAPI {
             query: queryParameters,
         }, initOverrides);
 
-        return new runtime.VoidApiResponse(response);
+        return new runtime.JSONApiResponse(response, (jsonValue) => IsochroneOutFromJSON(jsonValue));
     }
 
     /**
      * Generate Isochrone
      */
-    async apiGenerateIsochrone(requestParameters: ApiGenerateIsochroneRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<void> {
-        await this.apiGenerateIsochroneRaw(requestParameters, initOverrides);
+    async apiGenerateIsochrone(requestParameters: ApiGenerateIsochroneRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<IsochroneOut> {
+        const response = await this.apiGenerateIsochroneRaw(requestParameters, initOverrides);
+        return await response.value();
     }
 
     /**
