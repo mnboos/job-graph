@@ -1,5 +1,5 @@
 {
-  "distance_influence": 15,
+  "distance_influence": 60,
   "priority": [
     {
       "if": "true",
