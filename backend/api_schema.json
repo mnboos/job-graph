@@ -1,0 +1,250 @@
+{
+    "components": {
+        "schemas": {
+            "FeatureProperties": {
+                "properties": {
+                    "city": {
+                        "title": "City",
+                        "type": "string"
+                    },
+                    "country": {
+                        "title": "Country",
+                        "type": "string"
+                    },
+                    "countrycode": {
+                        "title": "Countrycode",
+                        "type": "string"
+                    },
+                    "county": {
+                        "title": "County",
+                        "type": "string"
+                    },
+                    "district": {
+                        "title": "District",
+                        "type": "string"
+                    },
+                    "extent": {
+                        "maxItems": 4,
+                        "minItems": 4,
+                        "prefixItems": [
+                            {
+                                "type": "number"
+                            },
+                            {
+                                "type": "number"
+                            },
+                            {
+                                "type": "number"
+                            },
+                            {
+                                "type": "number"
+                            }
+                        ],
+                        "title": "Extent",
+                        "type": "array"
+                    },
+                    "housenumber": {
+                        "title": "Housenumber",
+                        "type": "string"
+                    },
+                    "name": {
+                        "title": "Name",
+                        "type": "string"
+                    },
+                    "osm_id": {
+                        "title": "Osm Id",
+                        "type": "integer"
+                    },
+                    "osm_key": {
+                        "title": "Osm Key",
+                        "type": "string"
+                    },
+                    "osm_type": {
+                        "title": "Osm Type",
+                        "type": "string"
+                    },
+                    "osm_value": {
+                        "title": "Osm Value",
+                        "type": "string"
+                    },
+                    "postcode": {
+                        "title": "Postcode",
+                        "type": "string"
+                    },
+                    "state": {
+                        "title": "State",
+                        "type": "string"
+                    },
+                    "street": {
+                        "title": "Street",
+                        "type": "string"
+                    },
+                    "type": {
+                        "title": "Type",
+                        "type": "string"
+                    }
+                },
+                "title": "FeatureProperties",
+                "type": "object"
+            },
+            "Geometry": {
+                "properties": {
+                    "coordinates": {
+                        "maxItems": 2,
+                        "minItems": 2,
+                        "prefixItems": [
+                            {
+                                "type": "number"
+                            },
+                            {
+                                "type": "number"
+                            }
+                        ],
+                        "title": "Coordinates",
+                        "type": "array"
+                    },
+                    "type": {
+                        "title": "Type",
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "type",
+                    "coordinates"
+                ],
+                "title": "Geometry",
+                "type": "object"
+            },
+            "PlacesSearchResult": {
+                "properties": {
+                    "geometry": {
+                        "$ref": "#/components/schemas/Geometry"
+                    },
+                    "properties": {
+                        "$ref": "#/components/schemas/FeatureProperties"
+                    },
+                    "show_canton": {
+                        "title": "Show Canton",
+                        "type": "boolean"
+                    }
+                },
+                "required": [
+                    "properties",
+                    "geometry",
+                    "show_canton"
+                ],
+                "title": "PlacesSearchResult",
+                "type": "object"
+            }
+        }
+    },
+    "info": {
+        "description": "",
+        "title": "NinjaAPI",
+        "version": "1.0.0"
+    },
+    "openapi": "3.1.0",
+    "paths": {
+        "/api/generate_isochrone": {
+            "get": {
+                "operationId": "core_api_generate_isochrone",
+                "parameters": [
+                    {
+                        "in": "query",
+                        "name": "travel_time_minutes",
+                        "required": true,
+                        "schema": {
+                            "title": "Travel Time Minutes",
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "in": "query",
+                        "name": "point",
+                        "required": true,
+                        "schema": {
+                            "title": "Point",
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "in": "query",
+                        "name": "profile",
+                        "required": true,
+                        "schema": {
+                            "title": "Profile",
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    }
+                },
+                "summary": "Generate Isochrone"
+            }
+        },
+        "/api/search": {
+            "get": {
+                "operationId": "core_api_search",
+                "parameters": [
+                    {
+                        "in": "query",
+                        "name": "query",
+                        "required": true,
+                        "schema": {
+                            "title": "Query",
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "in": "query",
+                        "name": "zoom",
+                        "required": true,
+                        "schema": {
+                            "title": "Zoom",
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "in": "query",
+                        "name": "lat",
+                        "required": true,
+                        "schema": {
+                            "title": "Lat",
+                            "type": "number"
+                        }
+                    },
+                    {
+                        "in": "query",
+                        "name": "lon",
+                        "required": true,
+                        "schema": {
+                            "title": "Lon",
+                            "type": "number"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "items": {
+                                        "$ref": "#/components/schemas/PlacesSearchResult"
+                                    },
+                                    "title": "Response",
+                                    "type": "array"
+                                }
+                            }
+                        },
+                        "description": "OK"
+                    }
+                },
+                "summary": "Search"
+            }
+        }
+    },
+    "servers": []
+}
