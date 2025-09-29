@@ -11,6 +11,14 @@ import os
 
 from django.core.wsgi import get_wsgi_application
 
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'backend.settings')
+from pathlib import Path
+
+from dotenv import load_dotenv
+
+dotenv_path = Path(__file__).parent.parent.parent / ".env"
+assert dotenv_path.is_file()
+load_dotenv(dotenv_path)
+
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "backend.settings")
 
 application = get_wsgi_application()

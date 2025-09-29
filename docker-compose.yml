@@ -1,3 +1,7 @@
+x-db: &db-default
+
+
+
 services:
   graphhopper:
     build:
@@ -32,3 +36,25 @@ services:
       - ./data/photon:/photon_data # Persist photon's data
     command: ["-osm-pbf", "/data/switzerland-latest.osm.pbf", "-country-codes", "CH", "-languages", "de,fr,it,en"]
     restart: unless-stopped
+
+  db:
+    image: postgis/postgis:17-3.5
+    restart: unless-stopped
+    command: -c config_file=/etc/postgresql/postgresql.conf
+    shm_size: 4gb
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    environment:
+      - POSTGRES_DB=${DB_NAME}
+      - POSTGRES_USER=${DB_USER}
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+      - TZ=${TZ}
+    container_name: db
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - ./postgresql.conf:/etc/postgresql/postgresql.conf
+      - ${APP_STORAGE_PATH:?err}/db/data:/var/lib/postgresql/data

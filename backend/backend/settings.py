@@ -10,6 +10,7 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
+import os
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -42,6 +43,7 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    "django.contrib.gis",
     "core",
 ]
 
@@ -80,11 +82,38 @@ WSGI_APPLICATION = "backend.wsgi.application"
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
+__dbsettings = {
+    "ENGINE": "django.contrib.gis.db.backends.postgis",
+    "NAME": os.environ.get("DB_NAME", "jobgraph"),
+    "USER": os.environ.get("DB_USER", "postgres"),
+    "PASSWORD": os.environ.get("DB_PASSWORD", "postgres"),
+    "HOST": os.environ.get("DB_HOST", "localhost"),
+    "PORT": os.environ.get("DB_PORT", "5432"),
+    # "CONN_HEALTH_CHECKS": True,
+    # "TEST": {
+    #     "HOST": os.environ.get("DB_HOST"),
+    #     "PORT": 5433,
+    # },
+    "OPTIONS": {
+        "pool": {
+            "min_size": 20,
+            "max_size": 20,
+            "num_workers": 1,
+        }
+    },
+}
+
 DATABASES = {
     "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "db.sqlite3",
-    }
+        **__dbsettings,
+        "TEST": {
+            "NAME": "test_postgres",
+        },
+    },
+    "test": {
+        **__dbsettings,
+        "NAME": "test_postgres",
+    },
 }
 
 
@@ -128,3 +157,7 @@ STATIC_URL = "static/"
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+GDAL_LIBRARY_PATH = os.environ.get("GDAL_LIBRARY_PATH", "C:/Users/mbo20/AppData/Local/Programs/OSGeo4W/bin/gdal311.dll")
+
+TASKS = {"default": {"BACKEND": "django_tasks.backends.immediate.ImmediateBackend"}}

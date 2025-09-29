@@ -3,3 +3,6 @@ data/graphhopper/cache
 data/graphhopper/osm
 .venv
 node_modules
+.env
+.env.*
+db
