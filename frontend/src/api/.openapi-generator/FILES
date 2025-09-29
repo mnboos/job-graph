@@ -5,6 +5,7 @@ models/FeatureProperties.ts
 models/Geometry.ts
 models/IsoPolygon.ts
 models/IsochroneOut.ts
+models/JobOpeningOut.ts
 models/PlacesSearchResult.ts
 models/index.ts
 runtime.ts

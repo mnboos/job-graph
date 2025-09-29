@@ -16,16 +16,26 @@
 import * as runtime from '../runtime';
 import type {
   IsochroneOut,
+  JobOpeningOut,
   PlacesSearchResult,
 } from '../models/index';
 import {
     IsochroneOutFromJSON,
     IsochroneOutToJSON,
+    JobOpeningOutFromJSON,
+    JobOpeningOutToJSON,
     PlacesSearchResultFromJSON,
     PlacesSearchResultToJSON,
 } from '../models/index';
 
 export interface ApiGenerateIsochroneRequest {
+    travelTimeMinutes: number;
+    lat: number;
+    lon: number;
+    profile: string;
+}
+
+export interface ApiJobsRequest {
     travelTimeMinutes: number;
     lat: number;
     lon: number;
@@ -114,6 +124,79 @@ export class DefaultApi extends runtime.BaseAPI {
      */
     async apiGenerateIsochrone(requestParameters: ApiGenerateIsochroneRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<IsochroneOut> {
         const response = await this.apiGenerateIsochroneRaw(requestParameters, initOverrides);
+        return await response.value();
+    }
+
+    /**
+     * Jobs
+     */
+    async apiJobsRaw(requestParameters: ApiJobsRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Array<JobOpeningOut>>> {
+        if (requestParameters['travelTimeMinutes'] == null) {
+            throw new runtime.RequiredError(
+                'travelTimeMinutes',
+                'Required parameter "travelTimeMinutes" was null or undefined when calling apiJobs().'
+            );
+        }
+
+        if (requestParameters['lat'] == null) {
+            throw new runtime.RequiredError(
+                'lat',
+                'Required parameter "lat" was null or undefined when calling apiJobs().'
+            );
+        }
+
+        if (requestParameters['lon'] == null) {
+            throw new runtime.RequiredError(
+                'lon',
+                'Required parameter "lon" was null or undefined when calling apiJobs().'
+            );
+        }
+
+        if (requestParameters['profile'] == null) {
+            throw new runtime.RequiredError(
+                'profile',
+                'Required parameter "profile" was null or undefined when calling apiJobs().'
+            );
+        }
+
+        const queryParameters: any = {};
+
+        if (requestParameters['travelTimeMinutes'] != null) {
+            queryParameters['travel_time_minutes'] = requestParameters['travelTimeMinutes'];
+        }
+
+        if (requestParameters['lat'] != null) {
+            queryParameters['lat'] = requestParameters['lat'];
+        }
+
+        if (requestParameters['lon'] != null) {
+            queryParameters['lon'] = requestParameters['lon'];
+        }
+
+        if (requestParameters['profile'] != null) {
+            queryParameters['profile'] = requestParameters['profile'];
+        }
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+
+        let urlPath = `/api/jobs`;
+
+        const response = await this.request({
+            path: urlPath,
+            method: 'GET',
+            headers: headerParameters,
+            query: queryParameters,
+        }, initOverrides);
+
+        return new runtime.JSONApiResponse(response, (jsonValue) => jsonValue.map(JobOpeningOutFromJSON));
+    }
+
+    /**
+     * Jobs
+     */
+    async apiJobs(requestParameters: ApiJobsRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<Array<JobOpeningOut>> {
+        const response = await this.apiJobsRaw(requestParameters, initOverrides);
         return await response.value();
     }
 

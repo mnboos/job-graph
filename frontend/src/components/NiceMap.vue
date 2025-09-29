@@ -71,7 +71,7 @@ const { data: features, isFetching: isFetchingPlaces } = useQuery({
     //     fetch(
     //         `http://localhost:8000/api/search?query=${filter.value}&zoom=${mymap.value?.getZoom()}&lat=${mymap.value?.getCenter().lat}&lon=${mymap.value?.getCenter().lng}`,
     //     ).then(r => r.json() as unknown as PhotonFeature[]),
-    queryFn: async () =>
+    queryFn: () =>
         api.apiSearch({
             query: filter.value,
             zoom: mymap.value?.getZoom() ?? 16,
@@ -82,6 +82,22 @@ const { data: features, isFetching: isFetchingPlaces } = useQuery({
 });
 
 const { data: polygons, isFetching: isFetchingIsochrone } = useQuery(isochroneQueryOptions);
+
+const isochroneLoaded = computed(() => !!polygons.value?.length);
+const { data: jobs } = useQuery({
+    queryKey: ["jobs", abfahrtsort, profile, travelTimeMinutes],
+    queryFn: () =>
+        api.apiJobs({
+            lat: abfahrtsort.value.geometry.coordinates[0],
+            lon: abfahrtsort.value.geometry.coordinates[1],
+            profile: profile.value,
+            travelTimeMinutes: travelTimeMinutes.value,
+        }),
+    enabled: isochroneLoaded,
+    initialData: [],
+});
+
+watch(jobs, () => console.log("jobs: ", jobs));
 
 watch(
     polygons,

@@ -3,7 +3,6 @@ import importlib
 from django_tasks import task
 
 from .models import JobOpening
-from django.contrib.gis.geos import Point
 import traceback
 import json
 
@@ -32,29 +31,40 @@ async def run_scraper_task(scraper_name: str, search_query: list[str]):
             #     company_name=job_data["company_name"], title=job_data["title"], description=job_data["description"]
             # )
 
-            coords = job_data.get("coordinates", [])
-            if coords and "latitude" in coords[0] and "longitude" in coords[0]:
-                location = Point(x=coords[0]["longitude"], y=coords[0]["latitude"], srid=4326)
-            else:
-                location = None
-
-            company = job_data["company"]["name"]
+            company = job_data["company"]
             title = job_data["title"]
+
+            workplace_zip = job_data.get("workplaceZip")
+            if workplace_zip == company.get("zip"):
+                address = " ".join([company.get("street", ""), company.get("houseNumber", "")]).strip()
+                country = company.get("country")
+            else:
+                address = ""
+                country_codes = job_data.get("countryCode")
+                if country_codes:
+                    country = country_codes[0]
+                else:
+                    country = ""
+                if country and country.lower() not in ["ch", "schweiz", "suisse", "svizzera"]:
+                    continue
 
             # Get or create the canonical JobOpening
             opening, created = await JobOpening.objects.aget_or_create(
-                company_name=company,
+                company_name=company.get("name"),
                 title=title,
-                location=location,
                 defaults={
-                    "company_name": company,
+                    "company_name": company.get("name"),
                     "title": title,
-                    "description": job_data["activity"],
+                    "description": job_data.get("activity"),
                     # Add the new fields to the defaults
-                    "workplace_zip": job_data.get("workplaceZip"),
-                    "workplace_city": job_data.get("workplaceCity"),
-                    "location": location,
+                    "zip": job_data.get("workplaceZip"),
+                    "city": job_data.get("workplaceCity"),
+                    "address": address,
+                    "country": country,
                     "raw_data": job_data,
+                    "first_published_at": job_data.get("firstPublishedAt"),
+                    "url_application": job_data.get("urlApplication", ""),
+                    "url_description": job_data.get("urlDescription", ""),
                 },
             )
 

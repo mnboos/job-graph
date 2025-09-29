@@ -160,6 +160,38 @@
                 "title": "IsochroneOut",
                 "type": "object"
             },
+            "JobOpeningOut": {
+                "properties": {
+                    "company_name": {
+                        "maxLength": 255,
+                        "title": "Company Name",
+                        "type": "string"
+                    },
+                    "location": {
+                        "anyOf": [
+                            {
+                                "items": {},
+                                "type": "array"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Location"
+                    },
+                    "title": {
+                        "maxLength": 255,
+                        "title": "Title",
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "title",
+                    "company_name"
+                ],
+                "title": "JobOpeningOut",
+                "type": "object"
+            },
             "PlacesSearchResult": {
                 "properties": {
                     "geometry": {
@@ -244,6 +276,66 @@
                     }
                 },
                 "summary": "Generate Isochrone"
+            }
+        },
+        "/api/jobs": {
+            "get": {
+                "operationId": "core_api_jobs",
+                "parameters": [
+                    {
+                        "in": "query",
+                        "name": "travel_time_minutes",
+                        "required": true,
+                        "schema": {
+                            "title": "Travel Time Minutes",
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "in": "query",
+                        "name": "lat",
+                        "required": true,
+                        "schema": {
+                            "title": "Lat",
+                            "type": "number"
+                        }
+                    },
+                    {
+                        "in": "query",
+                        "name": "lon",
+                        "required": true,
+                        "schema": {
+                            "title": "Lon",
+                            "type": "number"
+                        }
+                    },
+                    {
+                        "in": "query",
+                        "name": "profile",
+                        "required": true,
+                        "schema": {
+                            "title": "Profile",
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "items": {
+                                        "$ref": "#/components/schemas/JobOpeningOut"
+                                    },
+                                    "title": "Response",
+                                    "type": "array"
+                                }
+                            }
+                        },
+                        "description": "OK"
+                    }
+                },
+                "summary": "Jobs"
             }
         },
         "/api/search": {

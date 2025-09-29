@@ -49,10 +49,12 @@ class OstjobScraper(BaseScraper):
                 total_pages = resp.get("pages")
                 if total_pages > 1:
                     tasks = []
-                    for page_num in range(2, total_pages + 1):
-                        sleep_time = random.randint(100, 1000) / 1000
-                        print("sleeping: ", sleep_time, "s")
-                        await asyncio.sleep(sleep_time)
+                    max_parallel_requests = 3
+                    for i, page_num in enumerate(range(2, total_pages + 1)):
+                        if not i % max_parallel_requests:
+                            sleep_time = random.randint(100, 1000) / 1000
+                            print(f"[{i}]: sleeping: ", sleep_time, "s")
+                            await asyncio.sleep(sleep_time)
                         tasks.append(self._fetch_page(client, page_num))
 
                     print(f"Fetching remaining {len(tasks)} pages concurrently...")

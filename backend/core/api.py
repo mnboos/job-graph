@@ -1,8 +1,12 @@
+from asgiref.sync import sync_to_async
 from async_lru import alru_cache
+from django.contrib.gis.geos import Polygon
 from django.http import HttpRequest
-from ninja import NinjaAPI, Schema
+from ninja import NinjaAPI, Schema, ModelSchema
 import httpx
 from ninja.errors import HttpError
+
+from .models import JobOpening
 
 api = NinjaAPI()
 
@@ -46,6 +50,37 @@ class IsoPolygon(Schema):
 
 class IsochroneOut(Schema):
     polygons: list[IsoPolygon]
+
+
+from ninja.orm import register_field
+
+register_field("PointField", tuple)
+
+
+class JobOpeningOut(ModelSchema):
+    class Meta:
+        model = JobOpening
+        fields = ["title", "company_name", "location"]
+
+
+@api.get("/jobs", response=list[JobOpeningOut])
+async def jobs(request: HttpRequest, travel_time_minutes: int, lat: float, lon: float, profile: str):
+    travel_time_seconds = travel_time_minutes * 60
+    isochrone = await retrieve_isochrone(travel_time_seconds=travel_time_seconds, lat=lat, lon=lon, profile=profile)
+
+    polygons = isochrone.get("polygons", [])
+    all_polygons = []
+    for p in polygons:
+        rings = p.get("geometry", {}).get("coordinates", [])
+
+        all_polygons.append(Polygon(*rings))
+
+    # geom = Polygon(*all_polygons)
+    jobs = await sync_to_async(list)(
+        JobOpening.objects.filter(location__isnull=False, location__contained=all_polygons)
+    )
+    return jobs
+    # return JobOpening.objects.all()
 
 
 @api.get("/generate_isochrone", response=IsochroneOut)
