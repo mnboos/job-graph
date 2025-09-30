@@ -5,7 +5,7 @@ from django.http import HttpRequest
 from ninja import NinjaAPI, Schema, ModelSchema
 import httpx
 from ninja.errors import HttpError
-
+from ninja.orm import register_field
 from .models import JobOpening
 
 api = NinjaAPI()
@@ -52,15 +52,13 @@ class IsochroneOut(Schema):
     polygons: list[IsoPolygon]
 
 
-from ninja.orm import register_field
-
 register_field("PointField", tuple)
 
 
 class JobOpeningOut(ModelSchema):
     class Meta:
         model = JobOpening
-        fields = ["title", "company_name", "location"]
+        fields = ["id", "title", "company_name", "location"]
 
 
 @api.get("/jobs", response=list[JobOpeningOut])
@@ -75,12 +73,10 @@ async def jobs(request: HttpRequest, travel_time_minutes: int, lat: float, lon: 
 
         all_polygons.append(Polygon(*rings))
 
-    # geom = Polygon(*all_polygons)
-    jobs = await sync_to_async(list)(
-        JobOpening.objects.filter(location__isnull=False, location__contained=all_polygons)
-    )
-    return jobs
-    # return JobOpening.objects.all()
+    def load_jobs_sync():
+        return list(JobOpening.objects.filter(location__isnull=False, location__within=all_polygons).all())
+
+    return await sync_to_async(load_jobs_sync, thread_sensitive=True)()
 
 
 @api.get("/generate_isochrone", response=IsochroneOut)

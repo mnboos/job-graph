@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Map as LeafletMap, TileLayer, Polygon, LatLng } from "leaflet";
+import { Map as LeafletMap, TileLayer, Polygon, LatLng, Layer, LayerGroup, Marker } from "leaflet";
 import { computed, onMounted, type Ref, ref, toValue, useTemplateRef, watch } from "vue";
 
 import "leaflet/dist/leaflet.css";
@@ -25,8 +25,6 @@ const abfahrtsort = ref<PlacesSearchResult>({
 const mapContainer = useTemplateRef<HTMLDivElement>("map");
 const mymap: Ref<LeafletMap | undefined> = ref(undefined);
 
-const addedPolygons: Polygon[] = [];
-
 const profile = ref("bike");
 const profiles = [
     { label: "Fuss", value: "foot", icon: symSharpDirectionsWalk },
@@ -38,6 +36,8 @@ const profiles = [
 
 const hasMap = computed(() => !!mymap.value);
 const filter = ref("");
+const isochroneLayerGroup = new LayerGroup();
+const jobsLayerGroup = new LayerGroup();
 
 const api = new DefaultApi();
 
@@ -67,10 +67,6 @@ const placesDropdown = useTemplateRef<QSelect>("placesDropdown");
 const { data: features, isFetching: isFetchingPlaces } = useQuery({
     queryKey: ["search", filter],
     enabled: hasMap,
-    // queryFn: async () =>
-    //     fetch(
-    //         `http://localhost:8000/api/search?query=${filter.value}&zoom=${mymap.value?.getZoom()}&lat=${mymap.value?.getCenter().lat}&lon=${mymap.value?.getCenter().lng}`,
-    //     ).then(r => r.json() as unknown as PhotonFeature[]),
     queryFn: () =>
         api.apiSearch({
             query: filter.value,
@@ -97,27 +93,22 @@ const { data: jobs } = useQuery({
     initialData: [],
 });
 
-watch(jobs, () => console.log("jobs: ", jobs));
+watch(jobs, newJobs => {
+    jobsLayerGroup.clearLayers();
+    newJobs.forEach(job => {
+        if (job.location) {
+            new Marker(new LatLng(job.location[1], job.location[0])).addTo(jobsLayerGroup);
+        }
+    });
+});
 
 watch(
     polygons,
-    () => {
+    newPolygons => {
         if (polygons.value) {
-            console.log("watch polygons: ", { ...polygons.value });
-            addedPolygons.forEach(p => mymap.value?.removeLayer(p));
-            polygons.value?.forEach(p => {
-                const map = mymap.value;
-                if (map instanceof LeafletMap) {
-                    p.addTo(map);
-                    p.on("click", function () {
-                        map.fitBounds(p.getBounds());
-                    });
-                    addedPolygons.push(p);
-                    console.log("polygon added: ", p);
-                    if (!map.getBounds().contains(p.getBounds())) {
-                        // map.fitBounds(p.getBounds());
-                    }
-                }
+            isochroneLayerGroup.clearLayers();
+            newPolygons?.forEach(p => {
+                p.addTo(isochroneLayerGroup);
             });
         }
     },
@@ -212,6 +203,8 @@ onMounted(async () => {
             attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
         });
         layer.addTo(map);
+        isochroneLayerGroup.addTo(map);
+        jobsLayerGroup.addTo(map);
         mymap.value = map;
     }
 });
