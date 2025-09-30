@@ -10,7 +10,10 @@ from dotenv import load_dotenv
 
 
 def main():
-    dotenv_path = Path(__file__).parent.parent / ".env"
+    if dotenv_path := os.environ.get("ENV_FILE"):
+        dotenv_path = Path(dotenv_path)
+    else:
+        dotenv_path = Path(__file__).parent.parent / ".env"
     assert dotenv_path.is_file()
     print("Loading dotenv: ", dotenv_path)
     load_dotenv(dotenv_path, verbose=True)
