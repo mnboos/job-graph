@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Map as LeafletMap, TileLayer, Polygon, LatLng, Layer, LayerGroup, Marker } from "leaflet";
+import { Map as LeafletMap, TileLayer, Polygon, LatLng, LayerGroup, Marker } from "leaflet";
 import { computed, onMounted, type Ref, ref, toValue, useTemplateRef, watch } from "vue";
 
 import "leaflet/dist/leaflet.css";
