@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import { Map as LeafletMap, TileLayer, Polygon, LatLng, LayerGroup, Marker } from "leaflet";
+import vectorTileLayer from "leaflet-vector-tile-layer";
+
 import { computed, onMounted, type Ref, ref, toValue, useTemplateRef, watch } from "vue";
 
 import "leaflet/dist/leaflet.css";
@@ -202,9 +204,21 @@ onMounted(async () => {
             maxZoom: 19,
             attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
         });
-        layer.addTo(map);
+        // layer.addTo(map);
         isochroneLayerGroup.addTo(map);
         jobsLayerGroup.addTo(map);
+
+        const vl = vectorTileLayer("http://localhost:8080/planet_osm_point/{z}/{x}/{y}", {
+            vectorTileLayerStyles: {
+                points: {
+                    color: "red",
+                    fill: true,
+                },
+            },
+            maxNativeZoom: 14,
+        });
+        vl.addTo(map);
+
         mymap.value = map;
     }
 });
