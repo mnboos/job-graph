@@ -1,6 +1,18 @@
 <script setup lang="ts">
-import { Map as LeafletMap, TileLayer, Polygon, LatLng, LayerGroup, Marker } from "leaflet";
-import { computed, onMounted, type Ref, ref, toValue, useTemplateRef, watch } from "vue";
+import { Map as LeafletMap, TileLayer, Polygon, LatLng, LayerGroup, Marker, Popup } from "leaflet";
+import {
+    computed,
+    onMounted,
+    type Ref,
+    ref,
+    toValue,
+    useTemplateRef,
+    watch,
+    h,
+    render,
+    getCurrentInstance,
+    type AppContext,
+} from "vue";
 
 import "leaflet/dist/leaflet.css";
 import { queryOptions, useQuery } from "@tanstack/vue-query";
@@ -13,6 +25,7 @@ import {
     symSharpElectricMoped,
 } from "@quasar/extras/material-symbols-sharp";
 import PlaceSearchItem from "@/components/PlaceSearchItem.vue";
+import JobTooltip from "@/components/JobTooltip.vue";
 import { DefaultApi, type PlacesSearchResult } from "@/api";
 
 const travelTimeMinutes = ref(10);
@@ -24,6 +37,7 @@ const abfahrtsort = ref<PlacesSearchResult>({
 
 const mapContainer = useTemplateRef<HTMLDivElement>("map");
 const mymap: Ref<LeafletMap | undefined> = ref(undefined);
+let appContext: AppContext | undefined = undefined;
 
 const profile = ref("bike");
 const profiles = [
@@ -94,10 +108,43 @@ const { data: jobs } = useQuery({
 });
 
 watch(jobs, newJobs => {
+    console.log("app contenxt: ", appContext);
+
     jobsLayerGroup.clearLayers();
     newJobs.forEach(job => {
         if (job.location) {
-            new Marker(new LatLng(job.location[1], job.location[0])).addTo(jobsLayerGroup);
+            const popupContainerId = `$job-${job.id}`;
+            new Marker(new LatLng(job.location[1], job.location[0]))
+                .addTo(jobsLayerGroup)
+                .bindTooltip(() => job.title + "<br>" + job.companyName)
+                .bindPopup(() => `<div id="${popupContainerId}" class="fit" style="min-width: 33vw"></div>`, {
+                    className: "quasar-popup", // This is our custom class hook
+                })
+                .on("popupopen", () => {
+                    const vnode = h(
+                        JobTooltip, // type
+                        {
+                            job: job,
+                            from_lon: abfahrtsort.value.geometry.coordinates[1],
+                            from_lat: abfahrtsort.value.geometry.coordinates[0],
+                            profile: profile.value,
+                        },
+                        [],
+                    );
+                    if (appContext) {
+                        vnode.appContext = appContext;
+                    }
+                    const popupContainer = document.getElementById(popupContainerId);
+                    if (popupContainer) {
+                        render(vnode, popupContainer);
+                    }
+                })
+                .on("popupclose", () => {
+                    const popupContainer = document.getElementById(popupContainerId);
+                    if (popupContainer) {
+                        render(null, popupContainer);
+                    }
+                });
         }
     });
 });
@@ -108,7 +155,12 @@ watch(
         if (polygons.value) {
             isochroneLayerGroup.clearLayers();
             newPolygons?.forEach(p => {
-                p.addTo(isochroneLayerGroup);
+                p.addTo(isochroneLayerGroup).on("click", () => {
+                    mymap.value?.fitBounds(p.getBounds());
+                });
+                if (!mymap.value?.getBounds().contains(p.getBounds())) {
+                    mymap.value?.fitBounds(p.getBounds());
+                }
             });
         }
     },
@@ -192,6 +244,10 @@ function selectAbfahrtsort(ort: PlacesSearchResult) {
 }
 
 onMounted(async () => {
+    const instance = getCurrentInstance();
+    appContext = instance?.appContext;
+    console.log("appcontext: ", appContext);
+
     if (mapContainer.value) {
         const map = new LeafletMap("map", {
             center: [47.521889, 9.252317],
@@ -312,5 +368,40 @@ onMounted(async () => {
 
 .custom-toggle-border {
     border: 1px solid #027be3;
+}
+</style>
+
+<style>
+.quasar-popup .leaflet-popup-content-wrapper {
+    background: none;
+    box-shadow: none;
+    border-radius: 0;
+    padding: 0;
+}
+
+/* 2. Remove the default padding on the content */
+/* Targets the direct child of the wrapper */
+.quasar-popup .leaflet-popup-content {
+    margin: 0;
+}
+
+/* 4. (Optional) Style the close button to match your theme */
+.quasar-popup .leaflet-popup-close-button {
+    top: 5px;
+    right: 5px;
+    color: white;
+    background-color: rgba(0, 0, 0, 0.5);
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
+    line-height: 24px;
+    text-align: center;
+    display: none;
+}
+
+/* Style the close button on hover */
+.quasar-popup .leaflet-popup-close-button:hover {
+    background-color: rgba(0, 0, 0, 0.7);
+    display: none;
 }
 </style>

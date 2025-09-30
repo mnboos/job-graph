@@ -1,6 +1,28 @@
 {
     "components": {
         "schemas": {
+            "DistanceCalculation": {
+                "properties": {
+                    "abfahrtsort": {
+                        "$ref": "#/components/schemas/Point"
+                    },
+                    "job_id": {
+                        "title": "Job Id",
+                        "type": "integer"
+                    },
+                    "profile": {
+                        "title": "Profile",
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "job_id",
+                    "abfahrtsort",
+                    "profile"
+                ],
+                "title": "DistanceCalculation",
+                "type": "object"
+            },
             "FeatureProperties": {
                 "properties": {
                     "city": {
@@ -162,10 +184,42 @@
             },
             "JobOpeningOut": {
                 "properties": {
+                    "address": {
+                        "anyOf": [
+                            {
+                                "maxLength": 255,
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Address"
+                    },
+                    "city": {
+                        "anyOf": [
+                            {
+                                "maxLength": 255,
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "City"
+                    },
                     "company_name": {
                         "maxLength": 255,
                         "title": "Company Name",
                         "type": "string"
+                    },
+                    "description": {
+                        "title": "Description",
+                        "type": "string"
+                    },
+                    "id": {
+                        "title": "Id",
+                        "type": "integer"
                     },
                     "location": {
                         "anyOf": [
@@ -186,8 +240,10 @@
                     }
                 },
                 "required": [
+                    "id",
                     "title",
-                    "company_name"
+                    "company_name",
+                    "description"
                 ],
                 "title": "JobOpeningOut",
                 "type": "object"
@@ -211,6 +267,24 @@
                     "show_canton"
                 ],
                 "title": "PlacesSearchResult",
+                "type": "object"
+            },
+            "Point": {
+                "properties": {
+                    "lat": {
+                        "title": "Lat",
+                        "type": "number"
+                    },
+                    "lon": {
+                        "title": "Lon",
+                        "type": "number"
+                    }
+                },
+                "required": [
+                    "lat",
+                    "lon"
+                ],
+                "title": "Point",
                 "type": "object"
             }
         }
@@ -336,6 +410,36 @@
                     }
                 },
                 "summary": "Jobs"
+            }
+        },
+        "/api/jobs/calc_distance": {
+            "post": {
+                "operationId": "core_api_calc_distance",
+                "parameters": [],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/DistanceCalculation"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "title": "Response",
+                                    "type": "number"
+                                }
+                            }
+                        },
+                        "description": "OK"
+                    }
+                },
+                "summary": "Calc Distance"
             }
         },
         "/api/search": {

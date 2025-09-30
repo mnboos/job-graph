@@ -56,9 +56,45 @@ register_field("PointField", tuple)
 
 
 class JobOpeningOut(ModelSchema):
+    id: int
+
     class Meta:
         model = JobOpening
-        fields = ["id", "title", "company_name", "location"]
+        fields = ["id", "title", "company_name", "location", "description", "address", "city"]
+
+
+class Point(Schema):
+    lat: float
+    lon: float
+
+
+class DistanceCalculation(Schema):
+    job_id: int
+    abfahrtsort: Point
+    profile: str
+
+
+@api.post("/jobs/calc_distance", response=float)
+async def calc_distance(request: HttpRequest, params: DistanceCalculation):
+    job = await sync_to_async(JobOpening.objects.get)(pk=params.job_id)
+    async with httpx.AsyncClient() as client:
+        request_params = {
+            "profile": params.profile,
+            "points": [
+                [params.abfahrtsort.lon, params.abfahrtsort.lat],
+                job.location.coords,
+            ],
+            "instructions": False,
+            "calc_points": False,
+            "details": [
+                "time",
+            ],
+        }
+        resp = await client.post("http://localhost:8989/route", json=request_params, timeout=30000)
+        resp.raise_for_status()
+        data = resp.json()
+    distance = data.get("paths", [{"distance": 0}])[0]["distance"]
+    return round(distance / 1000, 1)
 
 
 @api.get("/jobs", response=list[JobOpeningOut])
@@ -102,9 +138,8 @@ async def retrieve_isochrone(*, travel_time_seconds: int, lat: float, lon: float
             "time_limit": travel_time_seconds,
         }
         resp = await client.get("http://localhost:8989/isochrone", params=params, timeout=30000)
+        resp.raise_for_status()
         data = resp.json()
-        if resp.status_code != 200:
-            raise HttpError(resp.status_code, data)
     return data
 
 

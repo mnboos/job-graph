@@ -24,7 +24,31 @@ export interface JobOpeningOut {
      * @type {string}
      * @memberof JobOpeningOut
      */
+    address?: string | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof JobOpeningOut
+     */
+    city?: string | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof JobOpeningOut
+     */
     companyName: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof JobOpeningOut
+     */
+    description: string;
+    /**
+     * 
+     * @type {number}
+     * @memberof JobOpeningOut
+     */
+    id: number;
     /**
      * 
      * @type {Array<any>}
@@ -44,6 +68,8 @@ export interface JobOpeningOut {
  */
 export function instanceOfJobOpeningOut(value: object): value is JobOpeningOut {
     if (!('companyName' in value) || value['companyName'] === undefined) return false;
+    if (!('description' in value) || value['description'] === undefined) return false;
+    if (!('id' in value) || value['id'] === undefined) return false;
     if (!('title' in value) || value['title'] === undefined) return false;
     return true;
 }
@@ -58,7 +84,11 @@ export function JobOpeningOutFromJSONTyped(json: any, ignoreDiscriminator: boole
     }
     return {
         
+        'address': json['address'] == null ? undefined : json['address'],
+        'city': json['city'] == null ? undefined : json['city'],
         'companyName': json['company_name'],
+        'description': json['description'],
+        'id': json['id'],
         'location': json['location'] == null ? undefined : json['location'],
         'title': json['title'],
     };
@@ -75,7 +105,11 @@ export function JobOpeningOutToJSONTyped(value?: JobOpeningOut | null, ignoreDis
 
     return {
         
+        'address': value['address'],
+        'city': value['city'],
         'company_name': value['companyName'],
+        'description': value['description'],
+        'id': value['id'],
         'location': value['location'],
         'title': value['title'],
     };

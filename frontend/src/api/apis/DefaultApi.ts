@@ -15,11 +15,14 @@
 
 import * as runtime from '../runtime';
 import type {
+  DistanceCalculation,
   IsochroneOut,
   JobOpeningOut,
   PlacesSearchResult,
 } from '../models/index';
 import {
+    DistanceCalculationFromJSON,
+    DistanceCalculationToJSON,
     IsochroneOutFromJSON,
     IsochroneOutToJSON,
     JobOpeningOutFromJSON,
@@ -27,6 +30,10 @@ import {
     PlacesSearchResultFromJSON,
     PlacesSearchResultToJSON,
 } from '../models/index';
+
+export interface ApiCalcDistanceRequest {
+    distanceCalculation: DistanceCalculation;
+}
 
 export interface ApiGenerateIsochroneRequest {
     travelTimeMinutes: number;
@@ -53,6 +60,49 @@ export interface ApiSearchRequest {
  * 
  */
 export class DefaultApi extends runtime.BaseAPI {
+
+    /**
+     * Calc Distance
+     */
+    async apiCalcDistanceRaw(requestParameters: ApiCalcDistanceRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<number>> {
+        if (requestParameters['distanceCalculation'] == null) {
+            throw new runtime.RequiredError(
+                'distanceCalculation',
+                'Required parameter "distanceCalculation" was null or undefined when calling apiCalcDistance().'
+            );
+        }
+
+        const queryParameters: any = {};
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        headerParameters['Content-Type'] = 'application/json';
+
+
+        let urlPath = `/api/jobs/calc_distance`;
+
+        const response = await this.request({
+            path: urlPath,
+            method: 'POST',
+            headers: headerParameters,
+            query: queryParameters,
+            body: DistanceCalculationToJSON(requestParameters['distanceCalculation']),
+        }, initOverrides);
+
+        if (this.isJsonMime(response.headers.get('content-type'))) {
+            return new runtime.JSONApiResponse<number>(response);
+        } else {
+            return new runtime.TextApiResponse(response) as any;
+        }
+    }
+
+    /**
+     * Calc Distance
+     */
+    async apiCalcDistance(requestParameters: ApiCalcDistanceRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<number> {
+        const response = await this.apiCalcDistanceRaw(requestParameters, initOverrides);
+        return await response.value();
+    }
 
     /**
      * Generate Isochrone
