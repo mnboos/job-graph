@@ -1,30 +1,24 @@
 <script setup lang="ts">
 import { DefaultApi, type JobOpeningOut } from "@/api";
 import { computed, toRefs } from "vue";
-import {
-    symSharpOpenInBrowser,
-    symSharpBattery3Bar,
-    symSharpBottomPanelClose,
-    symSharpNearMe,
-    symSharpMenuOpen,
-} from "@quasar/extras/material-symbols-sharp";
+import { symSharpNearMe } from "@quasar/extras/material-symbols-sharp";
 import { useQuery } from "@tanstack/vue-query";
 
-const props = defineProps<{ job: JobOpeningOut; from_lat: number; from_lon: number; profile: string }>();
+const props = defineProps<{ job: JobOpeningOut; startLocation: number[]; profile: string }>();
 
-const { job, from_lat, from_lon, profile } = toRefs(props);
+const { job, startLocation, profile } = toRefs(props);
 
 const addressDisplay = computed(() => `${job.value.address}, ${job.value.city}`);
 
 const api = new DefaultApi();
 
 const { data: distance, isFetching: isFetchingDistance } = useQuery({
-    queryKey: ["routeTo", job.value.id, from_lat, from_lon, profile],
+    queryKey: ["routeTo", job.value.id, startLocation, profile],
     queryFn: () =>
         api.apiCalcDistance({
             distanceCalculation: {
                 jobId: job.value.id,
-                abfahrtsort: { lat: from_lat.value, lon: from_lon.value },
+                abfahrtsort: { lat: startLocation.value[1] ?? 0, lon: startLocation.value[0] ?? 0 },
                 profile: profile.value,
             },
         }),

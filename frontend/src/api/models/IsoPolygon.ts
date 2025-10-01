@@ -21,10 +21,10 @@ import { mapValues } from '../runtime';
 export interface IsoPolygon {
     /**
      * 
-     * @type {Array<Array<Array<any>>>}
+     * @type {Array<Array<Array<number>>>}
      * @memberof IsoPolygon
      */
-    rings: Array<Array<Array<any>>>;
+    rings: Array<Array<Array<number>>>;
 }
 
 /**

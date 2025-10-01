@@ -4,16 +4,15 @@ import type { PlacesSearchResult } from "@/api";
 
 const props = defineProps<{
     feature: PlacesSearchResult;
-    showCanton: boolean;
     focused: boolean;
     inline: boolean;
     clickable: boolean;
 }>();
-const emit = defineEmits<{ (e: "click"): void }>();
+const emit = defineEmits<(e: "click") => void>();
 
-const { feature, focused, inline, clickable, showCanton } = toRefs(props);
+const { feature, focused, inline, clickable } = toRefs(props);
 
-const cantonAbbreviations: { [key: string]: string } = {
+const cantonAbbreviations: Record<string, string> = {
     Aargau: "AG",
     "Appenzell Innerrhoden": "AI",
     "Appenzell Ausserrhoden": "AR",
@@ -43,11 +42,12 @@ const cantonAbbreviations: { [key: string]: string } = {
 };
 
 const classes = computed(() => (inline.value ? "q-mx-none q-px-none" : ""));
+
 const getCityWithOptionalCanton = () => {
-    const { city, state } = feature.value.properties;
+    const { city, state, showCanton } = feature.value.properties;
     if (!city) return "";
 
-    if (showCanton.value) {
+    if (showCanton) {
         const cantonAbbr = state ? cantonAbbreviations[state] : undefined;
         if (cantonAbbr) {
             return `${city} (${cantonAbbr})`;
@@ -82,7 +82,7 @@ const inlineDisplay = computed(() => {
 
 <template>
     <q-item :class="classes" :clickable="clickable" :focused="focused" @click="emit('click')">
-        <q-item-section>
+        <q-item-section v-if="feature">
             <q-item-label v-if="inline">{{ inlineDisplay }}</q-item-label>
             <q-item-label v-else>{{ feature.properties.name }}</q-item-label>
             <q-item-label v-if="!inline" caption>{{ secondaryLine }}</q-item-label>

@@ -31,43 +31,43 @@ import {
 /**
  * Represents a single, augmented search result feature.
  * @export
- * @interface PlacesSearchResult
+ * @interface FeatureSchema
  */
-export interface PlacesSearchResult {
+export interface FeatureSchema {
     /**
      * 
      * @type {GeometrySchema}
-     * @memberof PlacesSearchResult
+     * @memberof FeatureSchema
      */
     geometry: GeometrySchema;
     /**
      * 
      * @type {PropertiesSchema}
-     * @memberof PlacesSearchResult
+     * @memberof FeatureSchema
      */
     properties: PropertiesSchema;
     /**
      * 
      * @type {string}
-     * @memberof PlacesSearchResult
+     * @memberof FeatureSchema
      */
     type?: string;
 }
 
 /**
- * Check if a given object implements the PlacesSearchResult interface.
+ * Check if a given object implements the FeatureSchema interface.
  */
-export function instanceOfPlacesSearchResult(value: object): value is PlacesSearchResult {
+export function instanceOfFeatureSchema(value: object): value is FeatureSchema {
     if (!('geometry' in value) || value['geometry'] === undefined) return false;
     if (!('properties' in value) || value['properties'] === undefined) return false;
     return true;
 }
 
-export function PlacesSearchResultFromJSON(json: any): PlacesSearchResult {
-    return PlacesSearchResultFromJSONTyped(json, false);
+export function FeatureSchemaFromJSON(json: any): FeatureSchema {
+    return FeatureSchemaFromJSONTyped(json, false);
 }
 
-export function PlacesSearchResultFromJSONTyped(json: any, ignoreDiscriminator: boolean): PlacesSearchResult {
+export function FeatureSchemaFromJSONTyped(json: any, ignoreDiscriminator: boolean): FeatureSchema {
     if (json == null) {
         return json;
     }
@@ -79,11 +79,11 @@ export function PlacesSearchResultFromJSONTyped(json: any, ignoreDiscriminator: 
     };
 }
 
-export function PlacesSearchResultToJSON(json: any): PlacesSearchResult {
-    return PlacesSearchResultToJSONTyped(json, false);
+export function FeatureSchemaToJSON(json: any): FeatureSchema {
+    return FeatureSchemaToJSONTyped(json, false);
 }
 
-export function PlacesSearchResultToJSONTyped(value?: PlacesSearchResult | null, ignoreDiscriminator: boolean = false): any {
+export function FeatureSchemaToJSONTyped(value?: FeatureSchema | null, ignoreDiscriminator: boolean = false): any {
     if (value == null) {
         return value;
     }

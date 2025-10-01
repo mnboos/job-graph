@@ -23,118 +23,26 @@
                 "title": "DistanceCalculation",
                 "type": "object"
             },
-            "FeatureProperties": {
-                "properties": {
-                    "city": {
-                        "title": "City",
-                        "type": "string"
-                    },
-                    "country": {
-                        "title": "Country",
-                        "type": "string"
-                    },
-                    "countrycode": {
-                        "title": "Countrycode",
-                        "type": "string"
-                    },
-                    "county": {
-                        "title": "County",
-                        "type": "string"
-                    },
-                    "district": {
-                        "title": "District",
-                        "type": "string"
-                    },
-                    "extent": {
-                        "maxItems": 4,
-                        "minItems": 4,
-                        "prefixItems": [
-                            {
-                                "type": "number"
-                            },
-                            {
-                                "type": "number"
-                            },
-                            {
-                                "type": "number"
-                            },
-                            {
-                                "type": "number"
-                            }
-                        ],
-                        "title": "Extent",
-                        "type": "array"
-                    },
-                    "housenumber": {
-                        "title": "Housenumber",
-                        "type": "string"
-                    },
-                    "name": {
-                        "title": "Name",
-                        "type": "string"
-                    },
-                    "osm_id": {
-                        "title": "Osm Id",
-                        "type": "integer"
-                    },
-                    "osm_key": {
-                        "title": "Osm Key",
-                        "type": "string"
-                    },
-                    "osm_type": {
-                        "title": "Osm Type",
-                        "type": "string"
-                    },
-                    "osm_value": {
-                        "title": "Osm Value",
-                        "type": "string"
-                    },
-                    "postcode": {
-                        "title": "Postcode",
-                        "type": "string"
-                    },
-                    "state": {
-                        "title": "State",
-                        "type": "string"
-                    },
-                    "street": {
-                        "title": "Street",
-                        "type": "string"
-                    },
-                    "type": {
-                        "title": "Type",
-                        "type": "string"
-                    }
-                },
-                "title": "FeatureProperties",
-                "type": "object"
-            },
-            "Geometry": {
+            "GeometrySchema": {
+                "description": "Defines the geographical point of the feature.",
                 "properties": {
                     "coordinates": {
-                        "maxItems": 2,
-                        "minItems": 2,
-                        "prefixItems": [
-                            {
-                                "type": "number"
-                            },
-                            {
-                                "type": "number"
-                            }
-                        ],
+                        "items": {
+                            "type": "number"
+                        },
                         "title": "Coordinates",
                         "type": "array"
                     },
                     "type": {
+                        "default": "Point",
                         "title": "Type",
                         "type": "string"
                     }
                 },
                 "required": [
-                    "type",
                     "coordinates"
                 ],
-                "title": "Geometry",
+                "title": "GeometrySchema",
                 "type": "object"
             },
             "IsoPolygon": {
@@ -142,16 +50,9 @@
                     "rings": {
                         "items": {
                             "items": {
-                                "maxItems": 2,
-                                "minItems": 2,
-                                "prefixItems": [
-                                    {
-                                        "type": "number"
-                                    },
-                                    {
-                                        "type": "number"
-                                    }
-                                ],
+                                "items": {
+                                    "type": "number"
+                                },
                                 "type": "array"
                             },
                             "type": "array"
@@ -222,16 +123,11 @@
                         "type": "integer"
                     },
                     "location": {
-                        "anyOf": [
-                            {
-                                "items": {},
-                                "type": "array"
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ],
-                        "title": "Location"
+                        "items": {
+                            "type": "number"
+                        },
+                        "title": "Location",
+                        "type": "array"
                     },
                     "title": {
                         "maxLength": 255,
@@ -249,22 +145,23 @@
                 "type": "object"
             },
             "PlacesSearchResult": {
+                "description": "Represents a single, augmented search result feature.",
                 "properties": {
                     "geometry": {
-                        "$ref": "#/components/schemas/Geometry"
+                        "$ref": "#/components/schemas/GeometrySchema"
                     },
                     "properties": {
-                        "$ref": "#/components/schemas/FeatureProperties"
+                        "$ref": "#/components/schemas/PropertiesSchema"
                     },
-                    "show_canton": {
-                        "title": "Show Canton",
-                        "type": "boolean"
+                    "type": {
+                        "default": "Feature",
+                        "title": "Type",
+                        "type": "string"
                     }
                 },
                 "required": [
                     "properties",
-                    "geometry",
-                    "show_canton"
+                    "geometry"
                 ],
                 "title": "PlacesSearchResult",
                 "type": "object"
@@ -285,6 +182,44 @@
                     "lon"
                 ],
                 "title": "Point",
+                "type": "object"
+            },
+            "PropertiesSchema": {
+                "description": "Defines the descriptive properties of a feature.\n\nWe only include fields the frontend needs, plus our custom `show_canton` flag.",
+                "properties": {
+                    "city": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "City"
+                    },
+                    "countrycode": {
+                        "title": "Countrycode",
+                        "type": "string"
+                    },
+                    "name": {
+                        "title": "Name",
+                        "type": "string"
+                    },
+                    "show_canton": {
+                        "title": "Show Canton",
+                        "type": "boolean"
+                    },
+                    "state": {
+                        "title": "State",
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "name",
+                    "show_canton"
+                ],
+                "title": "PropertiesSchema",
                 "type": "object"
             }
         }

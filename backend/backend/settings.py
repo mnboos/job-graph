@@ -84,11 +84,11 @@ WSGI_APPLICATION = "backend.wsgi.application"
 
 __dbsettings = {
     "ENGINE": "django.contrib.gis.db.backends.postgis",
-    "NAME": os.environ.get("DB_NAME", "jobgraph"),
-    "USER": os.environ.get("DB_USER", "postgres"),
-    "PASSWORD": os.environ.get("DB_PASSWORD", "postgres"),
-    "HOST": os.environ.get("DB_HOST", "localhost"),
-    "PORT": os.environ.get("DB_PORT", "5432"),
+    "NAME": os.environ.get("DB_NAME"),
+    "USER": os.environ.get("DB_USER"),
+    "PASSWORD": os.environ.get("DB_PASSWORD"),
+    "HOST": os.environ.get("DB_HOST"),
+    "PORT": os.environ.get("DB_PORT"),
     # "CONN_HEALTH_CHECKS": True,
     # "TEST": {
     #     "HOST": os.environ.get("DB_HOST"),
@@ -102,6 +102,9 @@ __dbsettings = {
         }
     },
 }
+
+for k in __dbsettings:
+    assert __dbsettings[k], f"value is missing in database settings for key: {k}"
 
 DATABASES = {
     "default": {
@@ -158,6 +161,7 @@ STATIC_URL = "static/"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
-GDAL_LIBRARY_PATH = os.environ.get("GDAL_LIBRARY_PATH", "C:/Users/mbo20/AppData/Local/Programs/OSGeo4W/bin/gdal311.dll")
+GDAL_LIBRARY_PATH = os.environ.get("GDAL_LIBRARY_PATH")
+GEOS_LIBRARY_PATH = os.environ.get("GEOS_LIBRARY_PATH")
 
 TASKS = {"default": {"BACKEND": "django_tasks.backends.immediate.ImmediateBackend"}}

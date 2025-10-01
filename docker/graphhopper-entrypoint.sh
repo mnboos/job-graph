@@ -23,7 +23,7 @@ if [ -s $OSM_DATA_FILE ]; then
 	
 	#java -jar graphhopper.jar import /config.yaml
 	java -jar graphhopper.jar check /config.yaml
-    java -Xmx12g -Xms12g -Ddw.graphhopper.datareader.file=${OSM_DATA_FILE} -jar graphhopper.jar server /config.yaml
+    java -Xmx6g -Xms6g -Ddw.graphhopper.datareader.file=${OSM_DATA_FILE} -jar graphhopper.jar server /config.yaml
 else
     echo "Could not start graphhopper, no OSM data was found."
 	exit 1

@@ -14,7 +14,7 @@ def main():
         dotenv_path = Path(dotenv_path)
     else:
         dotenv_path = Path(__file__).parent.parent / ".env"
-    assert dotenv_path.is_file()
+    assert dotenv_path.is_file(), f"No .env file was found at: {dotenv_path}"
     print("Loading dotenv: ", dotenv_path)
     load_dotenv(dotenv_path, verbose=True)
 

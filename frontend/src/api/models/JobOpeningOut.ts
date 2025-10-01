@@ -51,10 +51,10 @@ export interface JobOpeningOut {
     id: number;
     /**
      * 
-     * @type {Array<any>}
+     * @type {Array<number>}
      * @memberof JobOpeningOut
      */
-    location?: Array<any> | null;
+    location?: Array<number>;
     /**
      * 
      * @type {string}

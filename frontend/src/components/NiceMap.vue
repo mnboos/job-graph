@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Map as LeafletMap, TileLayer, Polygon, LatLng, LayerGroup, Marker, Popup } from "leaflet";
+import { Map as LeafletMap, TileLayer, Polygon, LatLng, LayerGroup, Marker } from "leaflet";
 import {
     computed,
     onMounted,
@@ -26,13 +26,32 @@ import {
 } from "@quasar/extras/material-symbols-sharp";
 import PlaceSearchItem from "@/components/PlaceSearchItem.vue";
 import JobTooltip from "@/components/JobTooltip.vue";
-import { DefaultApi, type PlacesSearchResult } from "@/api";
+import { DefaultApi, type JobOpeningOut, type PlacesSearchResult } from "@/api";
 
 const travelTimeMinutes = ref(10);
 const abfahrtsort = ref<PlacesSearchResult>({
-    properties: { name: "Zihlschlacht" },
-    geometry: { type: "Point", coordinates: [47.521889, 9.252317] },
-    showCanton: false,
+    type: "Feature",
+    properties: {
+        name: "Zihlschlacht-Sitterdorf",
+        city: null,
+        state: "Thurgau",
+        countrycode: "CH",
+        showCanton: false,
+    },
+    geometry: { type: "Point", coordinates: [9.259269150287928, 47.514206200000004] },
+});
+
+function zoomTo(place: PlacesSearchResult) {
+    console.log("zoom to: ", place);
+    if (mymap.value) {
+        mymap.value.flyTo(new LatLng(place.geometry.coordinates[1] ?? 0, place.geometry.coordinates[0] ?? 0));
+    }
+}
+
+watch(abfahrtsort, (ortNeu, ortAlt) => {
+    if (ortNeu !== ortAlt) {
+        zoomTo(ortNeu);
+    }
 });
 
 const mapContainer = useTemplateRef<HTMLDivElement>("map");
@@ -60,8 +79,8 @@ const isochroneQueryOptions = queryOptions({
     enabled: hasMap,
     queryFn: () =>
         api.apiGenerateIsochrone({
-            lat: abfahrtsort.value.geometry.coordinates[0],
-            lon: abfahrtsort.value.geometry.coordinates[1],
+            lat: abfahrtsort.value.geometry.coordinates[1] ?? 0,
+            lon: abfahrtsort.value.geometry.coordinates[0] ?? 0,
             profile: profile.value,
             travelTimeMinutes: travelTimeMinutes.value,
         }),
@@ -69,7 +88,7 @@ const isochroneQueryOptions = queryOptions({
         return isochrone.polygons.map(
             p =>
                 new Polygon(
-                    p.rings.map(ring => ring.map(coord => new LatLng(coord[1], coord[0]))),
+                    p.rings.map(ring => ring.map(coord => new LatLng(coord[1] ?? 0, coord[0] ?? 0))),
                     { color: "red" },
                 ),
         );
@@ -78,7 +97,7 @@ const isochroneQueryOptions = queryOptions({
 });
 
 const placesDropdown = useTemplateRef<QSelect>("placesDropdown");
-const { data: features, isFetching: isFetchingPlaces } = useQuery({
+const { data: places, isFetching: isFetchingPlaces } = useQuery({
     queryKey: ["search", filter],
     enabled: hasMap,
     queryFn: () =>
@@ -98,8 +117,8 @@ const { data: jobs } = useQuery({
     queryKey: ["jobs", abfahrtsort, profile, travelTimeMinutes],
     queryFn: () =>
         api.apiJobs({
-            lat: abfahrtsort.value.geometry.coordinates[0],
-            lon: abfahrtsort.value.geometry.coordinates[1],
+            lat: abfahrtsort.value.geometry.coordinates[1] ?? 0,
+            lon: abfahrtsort.value.geometry.coordinates[0] ?? 0,
             profile: profile.value,
             travelTimeMinutes: travelTimeMinutes.value,
         }),
@@ -108,13 +127,14 @@ const { data: jobs } = useQuery({
 });
 
 watch(jobs, newJobs => {
-    console.log("app contenxt: ", appContext);
-
     jobsLayerGroup.clearLayers();
-    newJobs.forEach(job => {
-        if (job.location) {
+    newJobs.forEach((job: JobOpeningOut) => {
+        if (job.location?.length) {
             const popupContainerId = `$job-${job.id}`;
-            new Marker(new LatLng(job.location[1], job.location[0]))
+            const lat = job.location[1] ?? 0;
+            const lon = job.location[0] ?? 0;
+
+            new Marker(new LatLng(lat, lon))
                 .addTo(jobsLayerGroup)
                 .bindTooltip(() => job.title + "<br>" + job.companyName)
                 .bindPopup(() => `<div id="${popupContainerId}" class="fit" style="min-width: 33vw"></div>`, {
@@ -125,8 +145,7 @@ watch(jobs, newJobs => {
                         JobTooltip, // type
                         {
                             job: job,
-                            from_lon: abfahrtsort.value.geometry.coordinates[1],
-                            from_lat: abfahrtsort.value.geometry.coordinates[0],
+                            startLocation: abfahrtsort.value.geometry.coordinates,
                             profile: profile.value,
                         },
                         [],
@@ -167,55 +186,13 @@ watch(
     { immediate: true },
 );
 
-/**
- * A computed property that takes the raw `features` from useQuery and processes them.
- * It determines for each feature whether its canton should be displayed to resolve ambiguity.
- * This automatically re-runs whenever the `features` data changes.
- */
-const processedFeatures = computed(() => {
-    const currentFeatures = features.value;
-    if (!currentFeatures || currentFeatures.length === 0) {
-        return [];
-    }
-
-    // Step 1: Group all features by their city name.
-    const cityGroups = new Map<string, PlacesSearchResult[]>();
-    for (const feature of currentFeatures) {
-        const cityName = feature.properties.city || feature.properties.name;
-        if (!cityName) continue;
-
-        if (!cityGroups.has(cityName)) {
-            cityGroups.set(cityName, []);
-        }
-        cityGroups.get(cityName)!.push(feature);
-    }
-
-    // Step 2: Identify which city names are ambiguous (appear in multiple cantons).
-    const ambiguousCityNames = new Set<string>();
-    for (const [cityName, featuresInGroup] of cityGroups.entries()) {
-        const cantonsInGroup = new Set(featuresInGroup.map(f => f.properties.state));
-        if (cantonsInGroup.size > 1) {
-            ambiguousCityNames.add(cityName);
-        }
-    }
-
-    // Step 3: Map the original features list to a new list that includes the `showCanton` flag.
-    return currentFeatures.map(feature => {
-        const cityName = feature.properties.city || feature.properties.name;
-        return {
-            feature: feature,
-            showCanton: !!cityName && ambiguousCityNames.has(cityName), // todo: refactor: move to backend
-        };
-    });
-});
-
-async function onFilter(val: string, doneFn: (callbackFn: () => void, afterFn?: (ref: QSelect) => void) => void) {
-    if (!val.length && abfahrtsort.value) {
+function onFilter(val: string, doneFn: (callbackFn: () => void, afterFn?: (ref: QSelect) => void) => void) {
+    if (!val.length) {
         console.log("ort: ", toValue(abfahrtsort));
-        val = abfahrtsort.value?.properties.name ?? "foobar";
+        val = abfahrtsort.value.properties.name;
     }
     doneFn(
-        async () => {
+        () => {
             filter.value = val;
         },
         ref => {
@@ -243,10 +220,9 @@ function selectAbfahrtsort(ort: PlacesSearchResult) {
     placesDropdown.value?.updateInputValue("", true);
 }
 
-onMounted(async () => {
+onMounted(() => {
     const instance = getCurrentInstance();
     appContext = instance?.appContext;
-    console.log("appcontext: ", appContext);
 
     if (mapContainer.value) {
         const map = new LeafletMap("map", {
@@ -272,9 +248,9 @@ onMounted(async () => {
             <q-card class="row q-pa-md q-mt-md">
                 <q-select
                     ref="placesDropdown"
+                    v-model="abfahrtsort"
                     name="Start"
                     label="Abfahrtsort"
-                    autofocus
                     rounded
                     dense
                     hide-dropdown-icon
@@ -282,19 +258,18 @@ onMounted(async () => {
                     options-selected-class="text-accent"
                     :input-debounce="100"
                     type="search"
-                    :options="processedFeatures"
+                    :options="places"
                     outlined
-                    v-model="abfahrtsort"
-                    @filter="onFilter"
                     use-input
                     class="col-12"
+                    @filter="onFilter"
                     @keydown="onKeydown"
                 >
                     <template #loading></template>
                     <template #selected-item="props">
                         <PlaceSearchItem
-                            v-if="props.opt && props.opt.feature"
-                            :feature="props.opt.feature"
+                            v-if="props.opt"
+                            :feature="props.opt"
                             :show-canton="false"
                             :focused="false"
                             inline
@@ -303,22 +278,21 @@ onMounted(async () => {
                     </template>
                     <template #option="props">
                         <PlaceSearchItem
-                            :feature="props.opt.feature"
-                            :show-canton="props.opt.showCanton"
+                            :feature="props.opt"
                             :focused="props.focused"
-                            @click="selectAbfahrtsort(props.opt)"
                             :inline="false"
                             clickable
+                            @click="selectAbfahrtsort(props.opt)"
                         />
                     </template>
                 </q-select>
 
                 <div class="col-12 q-mt-md rounded-borders q-px-sm">Reisezeit</div>
                 <q-slider
+                    v-model.number="travelTimeMinutes"
                     name="reisezeit"
                     label
                     :label-value="travelTimeMinutes + 'min'"
-                    v-model.number="travelTimeMinutes"
                     switch-label-side
                     class="col-12 q-mb-lg q-px-sm"
                     color="orange"
@@ -331,14 +305,14 @@ onMounted(async () => {
                     label-always
                 ></q-slider>
                 <q-linear-progress
-                    class="absolute overlay no-border-radius"
                     v-if="isFetchingIsochrone || isFetchingPlaces"
+                    class="absolute overlay no-border-radius"
                     indeterminate
                 />
                 <div class="col-12 q-mt-md">
                     <q-btn-toggle
-                        name="profileSelection"
                         v-model="profile"
+                        name="profileSelection"
                         unelevated
                         class="custom-toggle-border"
                         text-color="primary"
@@ -371,6 +345,7 @@ onMounted(async () => {
 }
 </style>
 
+<!--suppress CssUnusedSymbol -->
 <style>
 .quasar-popup .leaflet-popup-content-wrapper {
     background: none;
@@ -379,13 +354,10 @@ onMounted(async () => {
     padding: 0;
 }
 
-/* 2. Remove the default padding on the content */
-/* Targets the direct child of the wrapper */
 .quasar-popup .leaflet-popup-content {
     margin: 0;
 }
 
-/* 4. (Optional) Style the close button to match your theme */
 .quasar-popup .leaflet-popup-close-button {
     top: 5px;
     right: 5px;
@@ -399,7 +371,6 @@ onMounted(async () => {
     display: none;
 }
 
-/* Style the close button on hover */
 .quasar-popup .leaflet-popup-close-button:hover {
     background-color: rgba(0, 0, 0, 0.7);
     display: none;
