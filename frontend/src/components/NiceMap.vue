@@ -63,7 +63,7 @@ const profiles = [
     { label: "Fuss", value: "foot", icon: symSharpDirectionsWalk },
     { label: "Velo", value: "bike", icon: symSharpPedalBike },
     { label: "E-Bike", value: "ebike", icon: symSharpElectricBike },
-    { label: "Mofa", value: "fast_ebike", icon: symSharpElectricMoped },
+    { label: "S-Pedelec", value: "fast_ebike", icon: symSharpElectricMoped },
     { label: "Auto", value: "car", icon: symSharpElectricCar },
 ];
 
