@@ -55,4 +55,4 @@ Diese Dienste sind reine Backend-Komponenten und werden nicht direkt im Internet
 
 ### Infrastruktur & Deployment
 
-*   **Containerisierung:** Der gesamte Stack – Django-App, Vue-Frontend, PostgreSQL, GraphHopper und Photon – ist vollständig mit **Docker** containerisiert und wird über eine `docker-compose.yml`-Datei orchestriert. Ein einfacher `docker-compose up`-Befehl startet die gesamte Anwendung lokal.
+*   **Containerisierung:** Der gesamte Stack – Django-App, Vue-Frontend, PostgreSQL, GraphHopper und Photon – ist vollständig mit **Docker** containerisiert.
