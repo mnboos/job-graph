@@ -30,3 +30,6 @@ def command():
             if not o.location:
                 o.location = Point(0, 0)
             o.save()
+    else:
+        print("There are no jobs that need geocoding.")
+    print("Geocoding complete.")
