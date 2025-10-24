@@ -6,20 +6,29 @@ from core.tasks import run_scraper_task
 def command():
     scrapers = ["core.scraper.ostjob_scraper.OstjobScraper"]
 
-    query = [
+    query = {
+        "python",
         "vue",
         "react",
-        "python",
-        "java",
-        ".net",
-        "Software Developer",
-        "Software Engineer",
+        "webentwickler",
         "Software Entwickler",
+        "Software Engineer",
+        "Software Developer",
+        "Softwareingenieur",
+        "Softwarearchitekt",
+        "Leiter Softwareentwicklung",
         "Software Ingenieur",
         "Software Architekt",
-    ]
+        "Software Engineer",
+        "Software Developer",
+        "django",
+        "devops",
+        "devsecops",
+        "java",
+        ".net",
+    }
 
     for s in scrapers:
-        run_scraper_task.enqueue(scraper_name=s, search_query=query)
+        run_scraper_task.enqueue(scraper_name=s, search_query=list(query))
 
     print("Running scraper...")
